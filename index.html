@@ -940,22 +940,55 @@ async function logoutUser(){
 }
 /* ===================== AUTH UI ===================== */
 
+/* ===================== AUTH UI ===================== */
+
 function updateAuthUI(){
-  const loginBtn = document.getElementById('auth-login-btn');
-  const signupBtn = document.getElementById('auth-signup-btn');
-  const logoutBtn = document.getElementById('auth-logout-btn');
-  const emailEl = document.getElementById('auth-user-email');
+
+  const loginBtn =
+    document.getElementById('auth-login-btn');
+
+  const signupBtn =
+    document.getElementById('auth-signup-btn');
+
+  const logoutBtn =
+    document.getElementById('auth-logout-btn');
+
+  const emailEl =
+    document.getElementById('auth-user-email');
 
   if(currentUser){
-    if(loginBtn) loginBtn.style.display = 'none';
-    if(signupBtn) signupBtn.style.display = 'none';
-    if(logoutBtn) logoutBtn.style.display = '';
-    if(emailEl) emailEl.textContent = currentUser.email || '';
+
+    if(loginBtn)
+      loginBtn.style.display = 'none';
+
+    if(signupBtn)
+      signupBtn.style.display = 'none';
+
+    if(logoutBtn)
+      logoutBtn.style.display = 'inline-block';
+
+    if(emailEl){
+      emailEl.textContent =
+        'Logged in as ' + (currentUser.email || 'User');
+
+      emailEl.style.display = 'inline-block';
+    }
+
   }else{
-    if(loginBtn) loginBtn.style.display = '';
-    if(signupBtn) signupBtn.style.display = '';
-    if(logoutBtn) logoutBtn.style.display = 'none';
-    if(emailEl) emailEl.textContent = '';
+
+    if(loginBtn)
+      loginBtn.style.display = 'inline-block';
+
+    if(signupBtn)
+      signupBtn.style.display = 'inline-block';
+
+    if(logoutBtn)
+      logoutBtn.style.display = 'none';
+
+    if(emailEl){
+      emailEl.textContent = '';
+      emailEl.style.display = 'none';
+    }
   }
 }
 /* ===================== SIGNED IN / SIGNED OUT ===================== */
