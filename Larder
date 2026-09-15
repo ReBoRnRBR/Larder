@@ -1,0 +1,2573 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Larder — Meal Planner &amp; Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF7EF; --card:#FFFFFF; --ink:#2A2820; --ink-soft:#726C5C; --ink-faint:#A39C89;
+    --herb:#3F6B4A; --herb-dark:#2E4F37; --herb-wash:#E9F0EA;
+    --mustard:#C98A2B; --mustard-wash:#FBF0DE;
+    --rust:#B5502C; --rust-wash:#FBEAE2;
+    --plum:#7A3B58; --plum-wash:#F3E8EE;
+    --line:#E1DBC9; --line-soft:#EDE9DC; --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,h4,.serif{font-family:'Fraunces',serif;}
+  .wrap{max-width:1220px;margin:0 auto;padding:0 28px 90px;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+  a{color:var(--herb-dark);}
+
+  header.app-head{padding:34px 0 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;}
+  header.app-head h1{font-size:32px;font-weight:500;font-style:italic;margin:0;color:var(--ink);letter-spacing:-0.01em;}
+  header.app-head p{margin:5px 0 0;color:var(--ink-soft);font-size:14px;max-width:520px;}
+  .storage-note{font-size:11.5px;color:var(--ink-faint);border:1px solid var(--line);border-radius:20px;padding:5px 12px;white-space:nowrap;}
+  .storage-note.ok{color:var(--herb-dark);}
+  .rule{height:1px;background:var(--line);border:0;margin:0;}
+
+  nav.tabs{display:flex;gap:24px;margin-top:18px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  nav.tabs button{background:none;border:none;padding:11px 0 11px;font-size:14px;color:var(--ink-soft);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  nav.tabs button:hover{color:var(--ink);}
+  nav.tabs button.active{color:var(--herb-dark);border-bottom-color:var(--herb);}
+
+  section.panel{display:none;padding-top:24px;}
+  section.panel.active{display:block;}
+
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:var(--herb-wash);color:var(--herb-dark);}
+  .badge.warn{background:var(--mustard-wash);color:#8a5f1d;}
+  .badge.muted{background:var(--line-soft);color:var(--ink-soft);}
+  .badge.rust{background:var(--rust-wash);color:var(--rust);}
+
+  .dash-card{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:20px 22px;margin-bottom:20px;}
+  .dash-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:16px;}
+  .dash-top h2{margin:0;font-size:20px;font-weight:500;}
+  .day-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .day-nav button.nav-arrow{border:1px solid var(--line);background:var(--card);border-radius:20px;width:30px;height:30px;color:var(--ink-soft);font-size:14px;}
+  .day-nav button.nav-arrow:hover{border-color:var(--herb);color:var(--herb-dark);}
+  .day-nav .day-chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:6px 13px;font-size:12.5px;color:var(--ink-soft);}
+  .day-nav .day-chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .day-nav .today-btn{border:1px solid var(--herb);color:var(--herb-dark);background:none;border-radius:20px;padding:6px 13px;font-size:12.5px;}
+  .day-nav .today-btn:hover{background:var(--herb);color:#fff;}
+
+  .dash-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+  .dm-cell{padding:13px 14px;border-right:1px solid var(--line-soft);background:var(--paper);}
+  .dm-cell:last-child{border-right:none;}
+  .dm-cell .dm-label{font-size:11.5px;color:var(--ink-soft);margin-bottom:5px;}
+  .dm-cell .dm-value{font-family:'Fraunces',serif;font-size:17px;font-weight:500;}
+  .dm-cell .dm-value small{font-family:'Inter',sans-serif;font-size:11px;color:var(--ink-faint);font-weight:400;}
+  .dm-cell .dm-status{font-size:10.5px;margin-top:3px;font-weight:600;}
+  .dm-cell .dm-status.ok{color:var(--herb-dark);}
+  .dm-cell .dm-status.low{color:var(--mustard);}
+  .dm-cell .dm-status.high{color:var(--rust);}
+  .bar-track{height:5px;background:var(--line-soft);border-radius:3px;margin-top:7px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:3px;}
+
+  .dash-counts{display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft);margin-bottom:4px;align-items:center;}
+  .dash-counts strong{color:var(--ink);}
+  .plan-week-btn{border:1px solid var(--plum);color:var(--plum);background:none;border-radius:20px;padding:8px 16px;font-size:13px;margin-left:auto;}
+  .plan-week-btn:hover{background:var(--plum);color:#fff;}
+
+  .day-meals-list{margin-top:18px;display:flex;flex-direction:column;gap:10px;}
+  .day-meal-row{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+  .day-meal-row .dm-info{display:flex;align-items:center;gap:12px;}
+  .day-meal-row .meal-type-tag{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;width:70px;}
+  .day-meal-row .meal-name{font-weight:600;font-size:14px;}
+  .day-meal-row .meal-kcal{font-size:12px;color:var(--ink-soft);}
+  .track-status{font-size:11px;padding:2px 8px;border-radius:20px;}
+  .track-status.eaten{background:var(--herb-wash);color:var(--herb-dark);}
+  .track-status.replaced{background:var(--plum-wash);color:var(--plum);}
+  .track-status.skipped{background:var(--rust-wash);color:var(--rust);}
+  .track-status.planned{background:var(--line-soft);color:var(--ink-faint);}
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .row-actions button{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:5px 11px;font-size:11.5px;color:var(--ink-soft);}
+  .row-actions button:hover{border-color:var(--herb);color:var(--herb-dark);}
+  .row-actions button.primary{border-color:var(--herb);color:var(--herb-dark);}
+  .row-actions button.danger:hover{border-color:var(--rust);color:var(--rust);}
+  .empty-meal-row{border:1px dashed var(--line);border-radius:var(--radius);padding:14px;text-align:center;}
+  .empty-meal-row button{border:none;background:none;color:var(--ink-faint);font-size:13.5px;}
+  .empty-meal-row button:hover{color:var(--herb-dark);}
+
+  .plan-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0 14px;font-size:13px;color:var(--ink-soft);}
+  .plan-toolbar select{border:1px solid var(--line);border-radius:2px;padding:6px 8px;font-size:13px;background:var(--card);}
+  details.full-week{margin-top:6px;}
+  details.full-week summary{cursor:pointer;font-size:13.5px;color:var(--herb-dark);font-weight:600;padding:8px 0;}
+
+  .plan-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin-top:10px;}
+  table.plan-grid{border-collapse:collapse;width:100%;min-width:980px;}
+  table.plan-grid th{text-align:left;font-weight:500;font-size:13px;color:var(--ink-soft);padding:10px 10px 6px;border-bottom:1px solid var(--line);background:var(--paper);}
+  table.plan-grid th.day-head{text-align:center;min-width:128px;}
+  table.plan-grid th.day-head .day-name{display:block;margin-bottom:4px;}
+  table.plan-grid th.day-head button.repeat-btn{font-size:10.5px;border:1px solid var(--line);background:var(--card);color:var(--ink-faint);border-radius:20px;padding:2px 8px;}
+  table.plan-grid th.day-head button.repeat-btn:hover{border-color:var(--herb);color:var(--herb-dark);}
+  table.plan-grid td.meal-label{font-family:'Fraunces',serif;font-size:14px;padding:10px;border-bottom:1px solid var(--line-soft);border-right:1px solid var(--line-soft);white-space:nowrap;vertical-align:top;}
+  table.plan-grid td.cell{padding:8px;border-bottom:1px solid var(--line-soft);border-right:1px solid var(--line-soft);vertical-align:top;}
+  table.plan-grid td.cell:last-child{border-right:none;}
+  .slot-empty{height:70px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--line);border-radius:var(--radius);color:var(--ink-faint);background:transparent;width:100%;font-size:13px;}
+  .slot-empty:hover{border-color:var(--herb);color:var(--herb-dark);}
+  .slot-filled{border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);padding:8px 9px;position:relative;min-height:70px;}
+  .slot-filled .name{font-size:12.5px;font-weight:600;padding-right:34px;line-height:1.3;}
+  .slot-filled .kcal{font-size:11px;color:var(--ink-soft);margin-top:3px;}
+  .slot-actions{position:absolute;top:6px;right:6px;display:flex;gap:3px;}
+  .icon-btn{width:19px;height:19px;border:none;background:none;color:var(--ink-faint);display:flex;align-items:center;justify-content:center;border-radius:2px;padding:0;font-size:13px;}
+  .icon-btn:hover{color:var(--herb-dark);background:var(--herb-wash);}
+  .icon-btn.remove:hover{color:var(--rust);background:var(--rust-wash);}
+
+  .chooser-options{display:flex;flex-direction:column;gap:10px;}
+  .chooser-option{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:16px 18px;text-align:left;display:flex;align-items:center;gap:14px;width:100%;}
+  .chooser-option:hover{border-color:var(--herb);background:var(--herb-wash);}
+  .chooser-option .co-icon{font-size:24px;}
+  .chooser-option .co-title{font-weight:600;font-size:14.5px;}
+  .chooser-option .co-sub{font-size:12.5px;color:var(--ink-soft);}
+
+  .swap-cat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .swap-cat-chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:6px 13px;font-size:12.5px;color:var(--ink-soft);}
+  .swap-cat-chip.active{background:var(--herb);border-color:var(--herb);color:#fff;}
+
+  .lib-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;justify-content:space-between;}
+  .lib-controls .lib-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .search-input{border:1px solid var(--line);border-radius:var(--radius);padding:9px 12px;font-size:14px;width:210px;background:var(--card);color:var(--ink);}
+  .search-input:focus{outline:none;border-color:var(--herb);}
+  select.select-input{border:1px solid var(--line);border-radius:var(--radius);padding:9px 10px;font-size:13.5px;background:var(--card);color:var(--ink);}
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:6px 14px;font-size:13px;color:var(--ink-soft);}
+  .chip.active{background:var(--herb);border-color:var(--herb);color:#fff;}
+  .chip.allergy.active{background:var(--rust);border-color:var(--rust);}
+  .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .filter-row .row-label{font-size:12px;color:var(--ink-faint);align-self:center;margin-right:2px;}
+  .btn-primary{border:1px solid var(--herb);background:var(--herb);color:#fff;border-radius:20px;padding:9px 16px;font-size:13.5px;}
+  .btn-primary:hover{background:var(--herb-dark);}
+
+  .recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px;margin-top:16px;}
+  .recipe-card{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:16px 17px 15px;position:relative;}
+  .recipe-card .fav-btn{position:absolute;top:14px;right:14px;border:none;background:none;font-size:17px;color:var(--ink-faint);padding:0;}
+  .recipe-card .fav-btn.active{color:var(--mustard);}
+  .recipe-card .tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;padding-right:26px;}
+  .recipe-card .tag{font-size:11px;color:var(--herb-dark);background:var(--herb-wash);padding:2px 8px;border-radius:20px;}
+  .recipe-card .tag.cuisine{color:var(--plum);background:var(--plum-wash);}
+  .recipe-card h3{margin:0 0 2px;font-size:16.5px;font-weight:500;line-height:1.25;}
+  .recipe-card .meta-line{font-size:11.5px;color:var(--ink-faint);margin-bottom:8px;}
+  .macro-row{display:flex;gap:11px;font-size:12px;color:var(--ink-soft);flex-wrap:wrap;margin-bottom:8px;}
+  .macro-row strong{color:var(--ink);font-weight:600;}
+  .pantry-pct{font-size:11.5px;color:var(--herb-dark);margin-bottom:8px;}
+  .card-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+  .btn-sm{border:1px solid var(--herb);color:var(--herb-dark);background:none;border-radius:20px;padding:6px 13px;font-size:12.5px;}
+  .btn-sm:hover{background:var(--herb);color:#fff;}
+  .btn-sm.secondary{border-color:var(--line);color:var(--ink-soft);}
+  .btn-sm.secondary:hover{background:var(--line-soft);color:var(--ink);}
+  .btn-sm.danger{border-color:var(--rust);color:var(--rust);}
+  .btn-sm.danger:hover{background:var(--rust);color:#fff;}
+  .quick-add-row{display:flex;gap:6px;align-items:center;width:100%;}
+  .quick-add-row select{border:1px solid var(--line);border-radius:2px;padding:5px 6px;font-size:12px;background:var(--card);flex:1;}
+  .quick-add-row button{border:1px solid var(--herb);background:var(--herb);color:#fff;border-radius:2px;padding:5px 10px;font-size:12px;white-space:nowrap;}
+
+  .empty-hero{border:1px dashed var(--line);border-radius:var(--radius);padding:44px 20px;text-align:center;color:var(--ink-soft);}
+  .empty-hero h3{margin:0 0 6px;font-size:19px;font-weight:500;}
+  .empty-hero p{margin:0 0 16px;font-size:13.5px;}
+
+  .shop-summary{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap;}
+  .shop-summary .ss-box{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:14px 20px;flex:1;min-width:160px;}
+  .shop-summary .ss-num{font-family:'Fraunces',serif;font-size:26px;font-weight:500;}
+  .shop-summary .ss-label{font-size:12px;color:var(--ink-soft);}
+  .shop-empty{color:var(--ink-soft);border:1px dashed var(--line);border-radius:var(--radius);padding:30px;text-align:center;}
+  .shop-group{margin-bottom:20px;}
+  .shop-group h3{font-size:15px;font-weight:500;margin:0 0 8px;color:var(--herb-dark);}
+  .shop-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:14px;}
+  .shop-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--herb);}
+  .shop-item .qty{margin-left:auto;color:var(--ink-soft);font-size:12.5px;text-align:right;}
+  .shop-item .qty small{display:block;color:var(--ink-faint);font-size:11px;}
+  .shop-item.done span.name{text-decoration:line-through;color:var(--ink-faint);}
+  details.pantry-panel{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:14px 18px;margin-top:24px;}
+  details.pantry-panel summary{cursor:pointer;font-size:14.5px;font-weight:500;}
+  .pantry-panel p.hint{font-size:12.5px;color:var(--ink-soft);margin:10px 0 12px;}
+  .pantry-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-soft);}
+  .pantry-row .pname{flex:1;font-size:13.5px;}
+  .pantry-row input{width:70px;border:1px solid var(--line);border-radius:2px;padding:5px 6px;font-size:13px;text-align:right;}
+  .pantry-add-row{display:flex;gap:8px;margin-top:10px;}
+  .pantry-add-row select{flex:1;border:1px solid var(--line);border-radius:2px;padding:7px 8px;font-size:13px;background:var(--card);}
+  .pantry-add-row input{width:70px;border:1px solid var(--line);border-radius:2px;padding:7px 6px;font-size:13px;}
+  .pantry-add-row button{border:1px solid var(--herb);background:var(--herb);color:#fff;border-radius:2px;padding:7px 14px;font-size:13px;}
+
+  .nutri-columns{display:grid;grid-template-columns:280px 1fr;gap:36px;align-items:start;}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .preset-btn{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:8px 12px;font-size:13px;color:var(--ink-soft);}
+  .preset-btn.active{border-color:var(--herb);color:var(--herb-dark);background:var(--herb-wash);}
+  .target-field{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line-soft);}
+  .target-field label{font-size:13px;color:var(--ink-soft);}
+  .target-field input{width:74px;border:1px solid var(--line);border-radius:2px;padding:5px 7px;font-size:13px;text-align:right;}
+  .target-field .unit{color:var(--ink-faint);font-size:11.5px;margin-left:4px;}
+  .day-picker{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+  .day-btn{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:7px 15px;font-size:13px;color:var(--ink-soft);}
+  .day-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .nutri-block h4{font-size:13px;color:var(--ink-soft);margin:0 0 12px;font-weight:600;}
+  .nutri-row{margin-bottom:12px;}
+  .nutri-row .top-line{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;}
+  .nutri-row .top-line .t{color:var(--ink-faint);}
+  .nutri-bar{height:6px;background:var(--line-soft);border-radius:4px;overflow:hidden;}
+  .nutri-bar .fill{height:100%;border-radius:4px;}
+
+  .assistant-panel{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);}
+  .assistant-panel h4{font-size:16px;font-weight:500;margin:0 0 4px;font-family:'Fraunces',serif;}
+  .assistant-panel .short-on{font-size:13px;color:var(--ink-soft);margin:0 0 14px;}
+  .assistant-panel .short-on strong{color:var(--rust);}
+  .gap-card{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:13px 15px;margin-bottom:10px;}
+  .gap-card .gtitle{font-weight:600;font-size:14px;margin-bottom:3px;}
+  .gap-card .gnums{font-size:12.5px;color:var(--ink-soft);margin-bottom:4px;}
+  .gap-card .gexplain{font-size:12px;color:var(--herb-dark);font-style:italic;margin-bottom:8px;}
+
+  .reset-link{font-size:11.5px;color:var(--ink-faint);background:none;border:none;text-decoration:underline;margin-top:26px;padding:0;}
+  .reset-link:hover{color:var(--rust);}
+
+  .tracker-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+  .tstat{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:13px 15px;}
+  .tstat .ts-num{font-family:'Fraunces',serif;font-size:22px;font-weight:500;}
+  .tstat .ts-label{font-size:11.5px;color:var(--ink-soft);}
+  .year-nav{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .year-nav button{border:1px solid var(--line);background:var(--card);border-radius:20px;width:30px;height:30px;color:var(--ink-soft);}
+  .year-nav button:hover{border-color:var(--herb);color:var(--herb-dark);}
+  .year-nav .year-label{font-family:'Fraunces',serif;font-size:20px;font-weight:500;}
+  .calendar-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:16px 18px;}
+  .calendar-month-labels{display:flex;margin-left:26px;margin-bottom:4px;}
+  .calendar-month-labels span{font-size:10.5px;color:var(--ink-faint);}
+  .calendar-body{display:flex;gap:3px;}
+  .calendar-weekday-labels{display:flex;flex-direction:column;gap:3px;margin-right:4px;justify-content:space-between;}
+  .calendar-weekday-labels span{font-size:9.5px;color:var(--ink-faint);height:11px;line-height:11px;}
+  .calendar-week-col{display:flex;flex-direction:column;gap:3px;}
+  .cal-day{width:11px;height:11px;border-radius:2px;border:1px solid var(--line-soft);background:var(--line-soft);padding:0;cursor:pointer;}
+  .cal-day[data-level="1"]{background:#CFE3D4;border-color:#CFE3D4;}
+  .cal-day[data-level="2"]{background:#7FB08D;border-color:#7FB08D;}
+  .cal-day[data-level="3"]{background:var(--herb-dark);border-color:var(--herb-dark);}
+  .cal-day.future{background:transparent;border-style:dashed;cursor:default;}
+  .cal-day:hover{outline:2px solid var(--ink);outline-offset:1px;}
+  .calendar-legend{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:var(--ink-faint);}
+  .calendar-legend .cal-day{cursor:default;}
+  .streak-row{display:flex;gap:16px;margin-top:16px;flex-wrap:wrap;}
+  .streak-box{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:10px 16px;}
+  .streak-box .sb-num{font-family:'Fraunces',serif;font-size:19px;font-weight:500;}
+  .streak-box .sb-label{font-size:11px;color:var(--ink-soft);}
+  .day-detail-meal{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;background:var(--card);}
+  .day-detail-meal .ddm-top{display:flex;justify-content:space-between;align-items:center;}
+
+  .overlay{position:fixed;inset:0;background:rgba(42,40,32,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 18px;overflow-y:auto;z-index:50;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--paper);border-radius:6px;max-width:600px;width:100%;border:1px solid var(--line);padding:24px 24px 22px;}
+  .modal.wide{max-width:760px;}
+  .modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:12px;}
+  .modal-head h2{margin:0;font-size:19px;font-weight:500;}
+  .modal-close{border:none;background:none;color:var(--ink-faint);font-size:20px;line-height:1;padding:2px;}
+  .modal-close:hover{color:var(--ink);}
+  .picker-controls{display:flex;gap:8px;margin-bottom:12px;}
+  .picker-list{max-height:420px;overflow-y:auto;}
+  .picker-item{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line-soft);gap:10px;}
+  .picker-item:hover{background:var(--herb-wash);}
+  .picker-item .p-name{font-size:14px;font-weight:500;}
+  .picker-item .p-meta{font-size:11.5px;color:var(--ink-faint);}
+  .picker-item button{border:1px solid var(--herb);color:var(--herb-dark);background:none;border-radius:20px;padding:5px 13px;font-size:12px;white-space:nowrap;}
+  .picker-item button:hover{background:var(--herb);color:#fff;}
+
+  .form-row{margin-bottom:14px;}
+  .form-row label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;font-weight:600;}
+  .form-row input[type=text], .form-row input[type=number], .form-row textarea{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:9px 11px;font-size:14px;background:var(--card);color:var(--ink);}
+  .form-row textarea{min-height:90px;resize:vertical;font-family:inherit;}
+  .form-row-inline{display:flex;gap:14px;}
+  .form-row-inline .form-row{flex:1;}
+  .mealtype-check-row{display:flex;gap:14px;flex-wrap:wrap;}
+  .mealtype-check-row label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;color:var(--ink);margin:0;}
+
+  .nutrition-panel{border:1px solid var(--herb);border-radius:var(--radius);background:var(--herb-wash);padding:14px 16px;margin-bottom:16px;}
+  .nutrition-panel .np-title{font-size:12px;color:var(--herb-dark);font-weight:600;margin-bottom:8px;}
+  .nutrition-panel .np-kcal{font-family:'Fraunces',serif;font-size:26px;font-weight:500;color:var(--ink);}
+  .nutrition-panel .np-macros{font-size:13px;color:var(--ink-soft);margin:4px 0 10px;}
+  .np-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px 14px;font-size:12px;color:var(--ink-soft);border-top:1px solid rgba(63,107,74,0.25);padding-top:10px;}
+  .np-grid strong{color:var(--ink);}
+
+  .stepper-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft);}
+  .stepper-row .sr-name{flex:1;font-size:14px;font-weight:500;}
+  .stepper-row .stepper{display:flex;align-items:center;gap:8px;}
+  .stepper button{width:26px;height:26px;border:1px solid var(--line);background:var(--card);border-radius:20px;color:var(--ink-soft);font-size:15px;display:flex;align-items:center;justify-content:center;padding:0;}
+  .stepper button:hover{border-color:var(--herb);color:var(--herb-dark);}
+  .stepper input{width:56px;border:1px solid var(--line);border-radius:2px;padding:4px 4px;font-size:13.5px;text-align:center;}
+  .stepper .unit{font-size:11.5px;color:var(--ink-faint);width:24px;}
+  .add-ing-row{display:flex;gap:8px;margin-top:12px;align-items:center;}
+  .add-ing-row select{flex:1;border:1px solid var(--line);border-radius:2px;padding:7px 8px;font-size:13px;background:var(--card);}
+  .add-ing-row input{width:60px;border:1px solid var(--line);border-radius:2px;padding:7px 6px;font-size:13px;}
+  .add-ing-row button{border:1px solid var(--herb);background:var(--herb);color:#fff;border-radius:2px;padding:7px 13px;font-size:12.5px;}
+  .swap-row{display:flex;gap:8px;margin-top:6px;align-items:center;}
+  .swap-row select{flex:1;border:1px solid var(--line);border-radius:2px;padding:7px 8px;font-size:13px;background:var(--card);}
+  .swap-row button{border:1px solid var(--plum);color:var(--plum);background:none;border-radius:2px;padding:7px 13px;font-size:12.5px;}
+  .swap-row button:hover{background:var(--plum);color:#fff;}
+  .swap-note{font-size:12px;color:var(--herb-dark);background:var(--herb-wash);border-radius:var(--radius);padding:8px 10px;margin-top:8px;}
+  .section-label{font-size:12px;color:var(--ink-soft);font-weight:600;margin:16px 0 6px;}
+  .instructions-box{font-size:13px;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-top:6px;white-space:pre-wrap;}
+  .empty-note{font-size:12.5px;color:var(--ink-faint);padding:12px 0;}
+  .modal-footer{display:flex;justify-content:space-between;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+  .add-to-plan-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .add-to-plan-row select{border:1px solid var(--line);border-radius:2px;padding:7px 8px;font-size:13px;background:var(--card);}
+  .form-error{color:var(--rust);font-size:12.5px;margin-top:4px;}
+  .result-count{font-size:12.5px;color:var(--ink-faint);margin-bottom:2px;}
+
+  @media (max-width:760px){
+    .nutri-columns{grid-template-columns:1fr;}
+    .dash-metrics{grid-template-columns:repeat(2,1fr);}
+    .tracker-stats-grid{grid-template-columns:repeat(2,1fr);}
+    .shop-summary{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="app-head">
+    <div>
+      <h1>Larder</h1>
+      <p>Plan your week, track what you actually eat, and let nutrition recalculate itself.</p>
+    </div>
+    <div class="storage-note" id="storage-note">Checking storage…</div>
+  </header>
+  <hr class="rule">
+
+  <nav class="tabs">
+    <button data-tab="plan" class="active">Plan</button>
+    <button data-tab="library">Recipes</button>
+    <button data-tab="shopping">Shopping</button>
+    <button data-tab="nutrition">Targets &amp; nutrition</button>
+    <button data-tab="tracker">Meal tracker</button>
+  </nav>
+
+  <section class="panel active" id="panel-plan">
+    <div class="dash-card">
+      <div class="dash-top">
+        <h2 id="dash-heading">Today</h2>
+        <div class="day-nav" id="day-nav"></div>
+      </div>
+      <div class="dash-metrics" id="dash-metrics"></div>
+      <div id="use-soon-panel"></div>
+      <div class="dash-counts">
+        <span id="dash-meals-planned"></span>
+        <span id="dash-meals-completed"></span>
+        <button class="plan-week-btn" onclick="openPlanWeekModal()">✨ Plan my week</button>
+      </div>
+      <div class="day-meals-list" id="day-meals-list"></div>
+    </div>
+
+    <details class="full-week">
+      <summary>Full week grid</summary>
+      <div class="plan-toolbar">
+        <span>Copy plan from</span>
+        <select id="copy-from-day"></select>
+        <span>to</span>
+        <select id="copy-to-day"></select>
+        <button class="btn-sm secondary" onclick="copyDayPlan()">Copy</button>
+      </div>
+      <div class="plan-scroll"><table class="plan-grid" id="plan-table"></table></div>
+    </details>
+  </section>
+
+  <section class="panel" id="panel-library">
+    <div class="lib-controls">
+      <div class="lib-filters">
+        <input type="text" class="search-input" id="lib-search" placeholder="Search your recipes…">
+        <select class="select-input" id="cuisine-filter"><option value="All">All cuisines</option></select>
+        <button class="chip" id="pantry-match-toggle">Match my pantry</button>
+      </div>
+      <button class="btn-primary" onclick="openRecipeModal(null)">+ New recipe</button>
+    </div>
+    <div class="filter-row" id="collection-chips"></div>
+    <div class="filter-row" id="mealtype-chips"></div>
+    <div class="filter-row" id="allergy-chips"></div>
+    <div class="result-count" id="lib-count"></div>
+    <div id="recipe-area"></div>
+  </section>
+
+  <section class="panel" id="panel-shopping">
+    <h2 class="serif" style="font-size:20px;font-weight:500;margin:0 0 14px;">Shopping</h2>
+    <div class="shop-summary" id="shop-summary"></div>
+    <div id="shopping-content"></div>
+    <details class="pantry-panel">
+      <summary>My pantry — manage what you have on hand</summary>
+      <p class="hint">Tell Larder what you already have. Shopping list quantities above only show what's still missing.</p>
+      <div id="pantry-list"></div>
+      <div class="pantry-add-row">
+        <button class="btn-sm" onclick="openIngredientPicker(addPantryIngredient)">+ Add ingredient to pantry</button>
+      </div>
+    </details>
+  </section>
+
+  <section class="panel" id="panel-nutrition">
+    <div class="nutri-columns">
+      <div>
+        <h4 class="serif" style="font-size:15px;font-weight:500;margin:0 0 12px;">Daily targets</h4>
+        <div class="presets" id="preset-buttons"></div>
+        <div id="target-fields"></div>
+        <button class="reset-link" onclick="resetAllData()">Reset all Larder data</button>
+      </div>
+      <div>
+        <div class="day-picker" id="day-picker"></div>
+        <div class="nutri-block"><h4>Macronutrients</h4><div id="macro-bars"></div></div>
+        <div class="nutri-block" style="margin-top:20px;"><h4>Micronutrients</h4><div id="micro-bars"></div></div>
+        <div class="assistant-panel" id="assistant-panel"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-tracker">
+    <div class="dash-card">
+      <div class="dash-top"><h2>Today's tracking</h2></div>
+      <div id="tracker-today"></div>
+    </div>
+
+    <h3 class="serif" style="font-size:19px;font-weight:500;margin:26px 0 4px;">Yearly meal tracking</h3>
+    <div class="year-nav" id="year-nav"></div>
+    <div class="tracker-stats-grid" id="tracker-stats"></div>
+    <div class="streak-row" id="streak-row"></div>
+    <div class="calendar-scroll" style="margin-top:16px;">
+      <div class="calendar-month-labels" id="cal-month-labels"></div>
+      <div class="calendar-body">
+        <div class="calendar-weekday-labels"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span>Sun</span></div>
+        <div class="calendar-body" id="cal-grid"></div>
+      </div>
+      <div class="calendar-legend">
+        <span>Less</span>
+        <button class="cal-day" data-level="0" title="No tracking data"></button>
+        <button class="cal-day" data-level="1" title="Some meals tracked"></button>
+        <button class="cal-day" data-level="2" title="Most meals tracked"></button>
+        <button class="cal-day" data-level="3" title="All planned meals completed"></button>
+        <span>More</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="chooser-overlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="chooser-title">How would you like to plan this meal?</h2><button class="modal-close" onclick="closeModal('chooser-overlay')">&times;</button></div>
+    <div class="chooser-options">
+      <button class="chooser-option" onclick="chooserPick('recipe')"><span class="co-icon">🍽</span><span><span class="co-title" style="display:block;">Choose a recipe</span><span class="co-sub">Browse your recipe library</span></span></button>
+      <button class="chooser-option" onclick="chooserPick('pantry')"><span class="co-icon">🥕</span><span><span class="co-title" style="display:block;">Use what I have</span><span class="co-sub">Find recipes using ingredients in my pantry</span></span></button>
+      <button class="chooser-option" onclick="chooserPick('gap')"><span class="co-icon">✨</span><span><span class="co-title" style="display:block;">Fill my nutrition gap</span><span class="co-sub">Find recipes that best fit today's remaining targets</span></span></button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="swap-overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h2 id="swap-title">Swap meal</h2><button class="modal-close" onclick="closeModal('swap-overlay')">&times;</button></div>
+    <div class="swap-cat-row" id="swap-categories"></div>
+    <div class="picker-list" id="swap-list"></div>
+  </div>
+</div>
+
+<div class="overlay" id="picker-overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h2 id="picker-title">Add a meal</h2><button class="modal-close" onclick="closeModal('picker-overlay')">&times;</button></div>
+    <div class="picker-controls">
+      <input type="text" class="search-input" id="picker-search" placeholder="Search…" oninput="renderPickerList()">
+      <select class="select-input" id="picker-cuisine" onchange="renderPickerList()"><option value="All">All cuisines</option></select>
+    </div>
+    <div class="result-count" id="picker-count"></div>
+    <div class="picker-list" id="picker-list"></div>
+  </div>
+</div>
+
+<div class="overlay" id="editor-overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h2 id="editor-title">Edit meal</h2><button class="modal-close" onclick="closeModal('editor-overlay')">&times;</button></div>
+    <div id="editor-ing-list"></div>
+    <button class="btn-sm" onclick="openIngredientPicker(addIngredientRowToEditorContext)">+ Add ingredient</button>
+    <div class="nutrition-panel" style="margin-top:16px;">
+      <div class="np-title">Updated nutrition</div>
+      <div class="np-kcal" id="editor-kcal">—</div>
+      <div class="np-macros" id="editor-macros"></div>
+      <div class="np-grid" id="editor-micros"></div>
+    </div>
+    <div id="swap-section"></div>
+    <div id="swap-note-area"></div>
+    <div class="section-label">Instructions</div>
+    <div class="instructions-box" id="editor-instructions"></div>
+  </div>
+</div>
+
+<div class="overlay" id="recipe-modal-overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h2 id="recipe-modal-title">New recipe</h2><button class="modal-close" onclick="closeModal('recipe-modal-overlay')">&times;</button></div>
+    <div class="form-row"><label>Recipe name</label><input type="text" id="rb-name" placeholder="e.g. Grandma's lentil soup"></div>
+    <div class="form-row-inline">
+      <div class="form-row"><label>Cuisine (optional)</label><input type="text" id="rb-cuisine" placeholder="e.g. Indian, homemade"></div>
+      <div class="form-row"><label>Prep + cook time, minutes (optional)</label><input type="number" id="rb-time" min="0" placeholder="e.g. 20"></div>
+    </div>
+    <div class="form-row"><label>Meal type</label><div class="mealtype-check-row" id="rb-mealtypes"></div></div>
+    <div class="nutrition-panel">
+      <div class="np-title">Nutrition — per 1 serving (calculated live)</div>
+      <div class="np-kcal" id="rb-kcal">0 kcal</div>
+      <div class="np-macros" id="rb-macros"></div>
+      <div class="np-grid" id="rb-micros"></div>
+    </div>
+    <div class="section-label">Ingredients (quantities for 1 serving)</div>
+    <div id="rb-ing-list"></div>
+    <button class="btn-sm" onclick="openIngredientPicker(addIngredientRowToBuilder)">+ Add ingredient</button>
+    <div class="form-row" style="margin-top:18px;"><label>Instructions</label><textarea id="rb-instructions" placeholder="1. Chop the onion...&#10;2. Heat oil in a pan..."></textarea></div>
+    <div class="form-error" id="rb-error"></div>
+    <div class="modal-footer">
+      <button class="btn-sm danger" id="rb-delete-btn" style="display:none;" onclick="deleteRecipeFromModal()">Delete recipe</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm secondary" onclick="closeModal('recipe-modal-overlay')">Cancel</button>
+        <button class="btn-primary" onclick="saveRecipeFromModal()">Save recipe</button>
+      </div>
+    </div>
+    <div id="rb-add-to-plan-section"></div>
+  </div>
+</div>
+
+<div class="overlay" id="planweek-overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h2>Your proposed week</h2><button class="modal-close" onclick="closeModal('planweek-overlay')">&times;</button></div>
+    <div id="planweek-body"></div>
+    <div class="modal-footer">
+      <button class="btn-sm secondary" onclick="regeneratePlanWeek()">Regenerate</button>
+      <button class="btn-primary" onclick="applyPlanWeek()">Apply plan</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="logfood-overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h2>Log food</h2><button class="modal-close" onclick="closeModal('logfood-overlay')">&times;</button></div>
+    <div class="form-row"><label>What did you eat?</label>
+      <select class="select-input" id="logfood-mode" onchange="renderLogFoodBody()" style="width:100%;">
+        <option value="recipe">Choose one of my recipes</option>
+        <option value="custom">Build from ingredients</option>
+      </select>
+    </div>
+    <div id="logfood-body"></div>
+    <div class="modal-footer">
+      <div></div>
+      <button class="btn-primary" onclick="saveLoggedFood()">Log it</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="daydetail-overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h2 id="daydetail-title">Day detail</h2><button class="modal-close" onclick="closeModal('daydetail-overlay')">&times;</button></div>
+    <div id="daydetail-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="monthsummary-overlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="monthsummary-title">Month summary</h2><button class="modal-close" onclick="closeModal('monthsummary-overlay')">&times;</button></div>
+    <div id="monthsummary-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="ingpicker-overlay">
+  <div class="modal wide">
+    <div class="modal-head"><h2>Add ingredient</h2><button class="modal-close" onclick="closeIngredientPicker()">&times;</button></div>
+    <div id="ingpicker-body"></div>
+  </div>
+</div>
+
+<script id="app-data" type="application/json">{"ingredientDB":{"almond_butter":{"id":"almond_butter","canonicalName":"Almond Butter","aliases":[],"category":"pantry","unit":"g","allergens":["tree_nut"],"proteinSource":false,"nutrientsPerGram":{"kcal":6.14,"protein":0.21,"carbs":0.19,"fat":0.56,"fiber":0.1,"sugar":0.04,"sodium":0.07,"calcium":3.47,"iron":0.035,"potassium":7.33,"magnesium":2.7,"zinc":0.031,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.24,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Prepared","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"apple_slices":{"id":"apple_slices","canonicalName":"Apple Slices","aliases":["apple"],"category":"fruit","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.52,"protein":0.003,"carbs":0.14,"fat":0.002,"fiber":0.024,"sugar":0.1,"sodium":0.01,"calcium":0.06,"iron":0.001,"potassium":1.07,"magnesium":0.05,"zinc":0.0004,"vitA":0.03,"vitC":0.046,"vitD":0.0,"vitE":0.002,"vitK":0.022000000000000002},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"arugula":{"id":"arugula","canonicalName":"Arugula","aliases":["rocket"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.25,"protein":0.026000000000000002,"carbs":0.037000000000000005,"fat":0.006999999999999999,"fiber":0.016,"sugar":0.02,"sodium":0.27,"calcium":1.6,"iron":0.015,"potassium":3.69,"magnesium":0.47,"zinc":0.005,"vitA":1.19,"vitC":0.15,"vitD":0.0,"vitE":0.004,"vitK":1.09},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"avocado":{"id":"avocado","canonicalName":"Avocado","aliases":[],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":1.6,"protein":0.02,"carbs":0.085,"fat":0.147,"fiber":0.067,"sugar":0.006999999999999999,"sodium":0.07,"calcium":0.12,"iron":0.006,"potassium":4.85,"magnesium":0.29,"zinc":0.006,"vitA":0.07,"vitC":0.1,"vitD":0.0,"vitE":0.021,"vitK":0.21},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"bell_peppers":{"id":"bell_peppers","canonicalName":"Bell Peppers","aliases":["bell pepper","capsicum"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.31,"protein":0.01,"carbs":0.06,"fat":0.003,"fiber":0.021,"sugar":0.042,"sodium":0.04,"calcium":0.1,"iron":0.004,"potassium":2.11,"magnesium":0.12,"zinc":0.003,"vitA":1.57,"vitC":1.28,"vitD":0.0,"vitE":0.016,"vitK":0.07400000000000001},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"berries":{"id":"berries","canonicalName":"Berries","aliases":["mixed berries"],"category":"fruit","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.52,"protein":0.01,"carbs":0.12,"fat":0.004,"fiber":0.03,"sugar":0.073,"sodium":0.01,"calcium":0.2,"iron":0.006,"potassium":1.52,"magnesium":0.13,"zinc":0.003,"vitA":0.03,"vitC":0.2,"vitD":0.0,"vitE":0.006,"vitK":0.079},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":"Dataset does not specify berry type; blueberry/strawberry average used","isMeatOrFish":false,"containsDairyOrEgg":false},"black_beans":{"id":"black_beans","canonicalName":"Black Beans","aliases":[],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.32,"protein":0.08900000000000001,"carbs":0.237,"fat":0.005,"fiber":0.087,"sugar":0.003,"sodium":0.01,"calcium":0.27,"iron":0.021,"potassium":3.55,"magnesium":0.6,"zinc":0.011000000000000001,"vitA":0.01,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.033},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"black_chickpeas_sprouted":{"id":"black_chickpeas_sprouted","canonicalName":"Black Chickpeas (Sprouted)","aliases":["kala chana","sprouted black chickpeas"],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.64,"protein":0.08900000000000001,"carbs":0.27399999999999997,"fat":0.026000000000000002,"fiber":0.076,"sugar":0.048,"sodium":0.24,"calcium":0.49,"iron":0.028999999999999998,"potassium":2.91,"magnesium":0.48,"zinc":0.015,"vitA":0.03,"vitC":0.04,"vitD":0.0,"vitE":0.008,"vitK":0.04},"nutritionSource":"Indian food-composition data / typical","rawCookedState":"Sprouted-cooked","sourceNote":"Nutritionally modeled on cooked chickpeas (kala chana composition data limited)","isMeatOrFish":false,"containsDairyOrEgg":false},"broccoli":{"id":"broccoli","canonicalName":"Broccoli","aliases":[],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.34,"protein":0.027999999999999997,"carbs":0.066,"fat":0.004,"fiber":0.026000000000000002,"sugar":0.017,"sodium":0.33,"calcium":0.47,"iron":0.006999999999999999,"potassium":3.16,"magnesium":0.21,"zinc":0.004,"vitA":0.31,"vitC":0.892,"vitD":0.0,"vitE":0.008,"vitK":1.02},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"brown_lentils":{"id":"brown_lentils","canonicalName":"Brown Lentils","aliases":[],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.16,"protein":0.09,"carbs":0.201,"fat":0.004,"fiber":0.079,"sugar":0.018000000000000002,"sodium":0.02,"calcium":0.19,"iron":0.033,"potassium":3.69,"magnesium":0.36,"zinc":0.013000000000000001,"vitA":0.01,"vitC":0.015,"vitD":0.0,"vitE":0.001,"vitK":0.017},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"brown_rice":{"id":"brown_rice","canonicalName":"Brown Rice","aliases":[],"category":"grain","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":1.12,"protein":0.026000000000000002,"carbs":0.235,"fat":0.009000000000000001,"fiber":0.018000000000000002,"sugar":0.002,"sodium":0.05,"calcium":0.1,"iron":0.004,"potassium":0.43,"magnesium":0.44,"zinc":0.006,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0005,"vitK":0.006},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"canned_tuna_in_water":{"id":"canned_tuna_in_water","canonicalName":"Canned Tuna in Water","aliases":["tuna"],"category":"protein","unit":"g","allergens":["fish"],"proteinSource":true,"nutrientsPerGram":{"kcal":1.16,"protein":0.26,"carbs":0.0,"fat":0.008,"fiber":0.0,"sugar":0.0,"sodium":2.47,"calcium":0.11,"iron":0.013000000000000001,"potassium":2.37,"magnesium":0.29,"zinc":0.006,"vitA":0.17,"vitC":0.0,"vitD":0.017,"vitE":0.005,"vitK":0.001},"nutritionSource":"USDA FoodData Central","rawCookedState":"Canned","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"cannellini_beans":{"id":"cannellini_beans","canonicalName":"Cannellini Beans","aliases":["white beans"],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.27,"protein":0.087,"carbs":0.228,"fat":0.005,"fiber":0.063,"sugar":0.003,"sodium":0.02,"calcium":0.66,"iron":0.027000000000000003,"potassium":3.82,"magnesium":0.45,"zinc":0.01,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"carrots":{"id":"carrots","canonicalName":"Carrots","aliases":["carrot"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.41,"protein":0.009000000000000001,"carbs":0.096,"fat":0.002,"fiber":0.027999999999999997,"sugar":0.047,"sodium":0.69,"calcium":0.33,"iron":0.003,"potassium":3.2,"magnesium":0.12,"zinc":0.002,"vitA":8.35,"vitC":0.059000000000000004,"vitD":0.0,"vitE":0.006999999999999999,"vitK":0.132},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"chaat_masala":{"id":"chaat_masala","canonicalName":"Chaat Masala","aliases":[],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":2.5,"protein":0.07,"carbs":0.55,"fat":0.03,"fiber":0.2,"sugar":0.05,"sodium":35.0,"calcium":1.5,"iron":0.15,"potassium":9.0,"magnesium":1.2,"zinc":0.02,"vitA":0.2,"vitC":0.1,"vitD":0.0,"vitE":0.01,"vitK":0.03},"nutritionSource":"Indian food-composition data / typical","rawCookedState":"Dry blend","sourceNote":"Composite spice blend; typical commercial composition, not a single fixed reference","isMeatOrFish":false,"containsDairyOrEgg":false},"chia_seeds":{"id":"chia_seeds","canonicalName":"Chia Seeds","aliases":[],"category":"seed_nut","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":4.86,"protein":0.17,"carbs":0.42,"fat":0.31,"fiber":0.34,"sugar":0.0,"sodium":0.16,"calcium":6.31,"iron":0.077,"potassium":4.07,"magnesium":3.35,"zinc":0.046,"vitA":0.01,"vitC":0.016,"vitD":0.0,"vitE":0.005,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Dry","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"chicken_breast":{"id":"chicken_breast","canonicalName":"Chicken Breast","aliases":["chicken"],"category":"protein","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.65,"protein":0.31,"carbs":0.0,"fat":0.036000000000000004,"fiber":0.0,"sugar":0.0,"sodium":0.74,"calcium":0.15,"iron":0.01,"potassium":2.56,"magnesium":0.29,"zinc":0.01,"vitA":0.06,"vitC":0.0,"vitD":0.001,"vitE":0.003,"vitK":0.003},"nutritionSource":"USDA FoodData Central (verified)","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"chickpeas":{"id":"chickpeas","canonicalName":"Chickpeas","aliases":["garbanzo beans"],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.64,"protein":0.08900000000000001,"carbs":0.27399999999999997,"fat":0.026000000000000002,"fiber":0.076,"sugar":0.048,"sodium":0.07,"calcium":0.49,"iron":0.028999999999999998,"potassium":2.91,"magnesium":0.48,"zinc":0.015,"vitA":0.03,"vitC":0.013000000000000001,"vitD":0.0,"vitE":0.004,"vitK":0.04},"nutritionSource":"USDA FoodData Central (verified)","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"chili_powder":{"id":"chili_powder","canonicalName":"Chili Powder","aliases":[],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":2.82,"protein":0.135,"carbs":0.5,"fat":0.14300000000000002,"fiber":0.348,"sugar":0.07200000000000001,"sodium":16.4,"calcium":1.7,"iron":0.17,"potassium":20.1,"magnesium":1.9,"zinc":0.027000000000000003,"vitA":9.08,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Dry spice","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"cilantro":{"id":"cilantro","canonicalName":"Cilantro","aliases":[],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.23,"protein":0.021,"carbs":0.037000000000000005,"fat":0.005,"fiber":0.027999999999999997,"sugar":0.009000000000000001,"sodium":0.46,"calcium":0.67,"iron":0.018000000000000002,"potassium":5.21,"magnesium":0.26,"zinc":0.005,"vitA":3.37,"vitC":0.27,"vitD":0.0,"vitE":0.025,"vitK":3.1},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"coconut_milk_light":{"id":"coconut_milk_light","canonicalName":"Coconut Milk (Light)","aliases":["light coconut milk"],"category":"pantry","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.97,"protein":0.01,"carbs":0.027999999999999997,"fat":0.092,"fiber":0.0,"sugar":0.018000000000000002,"sodium":0.1,"calcium":0.13,"iron":0.009000000000000001,"potassium":1.57,"magnesium":0.2,"zinc":0.004,"vitA":0.0,"vitC":0.006999999999999999,"vitD":0.0,"vitE":0.001,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Canned","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"coriander":{"id":"coriander","canonicalName":"Coriander","aliases":[],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.23,"protein":0.021,"carbs":0.037000000000000005,"fat":0.005,"fiber":0.027999999999999997,"sugar":0.009000000000000001,"sodium":0.46,"calcium":0.67,"iron":0.018000000000000002,"potassium":5.21,"magnesium":0.26,"zinc":0.005,"vitA":3.37,"vitC":0.27,"vitD":0.0,"vitE":0.025,"vitK":3.1},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":"Fresh coriander leaf, same composition as cilantro","isMeatOrFish":false,"containsDairyOrEgg":false},"cottage_cheese":{"id":"cottage_cheese","canonicalName":"Cottage Cheese","aliases":[],"category":"dairy","unit":"g","allergens":["dairy"],"proteinSource":true,"nutrientsPerGram":{"kcal":0.98,"protein":0.11,"carbs":0.034,"fat":0.043,"fiber":0.0,"sugar":0.03,"sodium":3.64,"calcium":0.83,"iron":0.001,"potassium":1.04,"magnesium":0.08,"zinc":0.004,"vitA":0.37,"vitC":0.0,"vitD":0.001,"vitE":0.0003,"vitK":0.003},"nutritionSource":"USDA FoodData Central","rawCookedState":"Prepared","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":true},"cucumber":{"id":"cucumber","canonicalName":"Cucumber","aliases":[],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.15,"protein":0.006999999999999999,"carbs":0.036000000000000004,"fat":0.001,"fiber":0.005,"sugar":0.017,"sodium":0.02,"calcium":0.16,"iron":0.003,"potassium":1.47,"magnesium":0.13,"zinc":0.002,"vitA":0.05,"vitC":0.027999999999999997,"vitD":0.0,"vitE":0.0003,"vitK":0.16399999999999998},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"cumin":{"id":"cumin","canonicalName":"Cumin","aliases":[],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":3.75,"protein":0.17800000000000002,"carbs":0.442,"fat":0.223,"fiber":0.105,"sugar":0.023,"sodium":1.68,"calcium":9.31,"iron":0.664,"potassium":17.88,"magnesium":3.66,"zinc":0.048,"vitA":0.64,"vitC":0.077,"vitD":0.0,"vitE":0.033,"vitK":0.054000000000000006},"nutritionSource":"USDA FoodData Central","rawCookedState":"Dry spice","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"curry_leaves":{"id":"curry_leaves","canonicalName":"Curry Leaves","aliases":[],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":1.08,"protein":0.061,"carbs":0.187,"fat":0.01,"fiber":0.064,"sugar":0.0,"sodium":0.04,"calcium":8.3,"iron":0.009000000000000001,"potassium":10.52,"magnesium":0.44,"zinc":0.009000000000000001,"vitA":7.2,"vitC":0.04,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"Indian food-composition data / typical","rawCookedState":"Fresh","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"diced_tomatoes":{"id":"diced_tomatoes","canonicalName":"Diced Tomatoes","aliases":["canned diced tomatoes"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.18,"protein":0.009000000000000001,"carbs":0.039,"fat":0.002,"fiber":0.012,"sugar":0.026000000000000002,"sodium":0.05,"calcium":0.1,"iron":0.003,"potassium":2.37,"magnesium":0.11,"zinc":0.002,"vitA":0.42,"vitC":0.13699999999999998,"vitD":0.0,"vitE":0.005,"vitK":0.079},"nutritionSource":"USDA FoodData Central","rawCookedState":"Canned","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"edamame":{"id":"edamame","canonicalName":"Edamame","aliases":[],"category":"legume","unit":"g","allergens":["soy"],"proteinSource":true,"nutrientsPerGram":{"kcal":1.22,"protein":0.11,"carbs":0.1,"fat":0.05,"fiber":0.05,"sugar":0.022000000000000002,"sodium":0.06,"calcium":0.63,"iron":0.023,"potassium":4.36,"magnesium":0.64,"zinc":0.013999999999999999,"vitA":0.04,"vitC":0.061,"vitD":0.0,"vitE":0.0,"vitK":0.2},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"egg_whites":{"id":"egg_whites","canonicalName":"Egg Whites","aliases":[],"category":"protein","unit":"g","allergens":["egg"],"proteinSource":true,"nutrientsPerGram":{"kcal":0.52,"protein":0.109,"carbs":0.006999999999999999,"fat":0.002,"fiber":0.0,"sugar":0.006999999999999999,"sodium":1.66,"calcium":0.07,"iron":0.0003,"potassium":1.63,"magnesium":0.11,"zinc":0.0003,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.002},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":true},"eggs":{"id":"eggs","canonicalName":"Eggs","aliases":["egg"],"category":"protein","unit":"piece","allergens":["egg"],"proteinSource":true,"nutrientsPerGram":{"kcal":72,"protein":6.3,"carbs":0.4,"fat":4.8,"fiber":0,"sugar":0.2,"sodium":71,"calcium":28,"iron":0.9,"potassium":69,"magnesium":5,"zinc":0.6,"vitA":80,"vitC":0,"vitD":1.1,"vitE":0.5,"vitK":0.1},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked, whole egg ~50g","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":true},"feta_cheese":{"id":"feta_cheese","canonicalName":"Feta Cheese","aliases":[],"category":"dairy","unit":"g","allergens":["dairy"],"proteinSource":false,"nutrientsPerGram":{"kcal":2.64,"protein":0.142,"carbs":0.040999999999999995,"fat":0.213,"fiber":0.0,"sugar":0.040999999999999995,"sodium":9.17,"calcium":4.93,"iron":0.006999999999999999,"potassium":0.62,"magnesium":0.19,"zinc":0.028999999999999998,"vitA":1.33,"vitC":0.0,"vitD":0.0,"vitE":0.004,"vitK":0.021},"nutritionSource":"USDA FoodData Central","rawCookedState":"Prepared","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":true},"firm_tofu":{"id":"firm_tofu","canonicalName":"Firm Tofu","aliases":["tofu"],"category":"protein","unit":"g","allergens":["soy"],"proteinSource":true,"nutrientsPerGram":{"kcal":1.44,"protein":0.155,"carbs":0.027999999999999997,"fat":0.087,"fiber":0.023,"sugar":0.006,"sodium":0.14,"calcium":3.5,"iron":0.027000000000000003,"potassium":1.48,"magnesium":0.58,"zinc":0.016,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.024},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw/firm","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"flank_steak":{"id":"flank_steak","canonicalName":"Flank Steak","aliases":["steak"],"category":"protein","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.92,"protein":0.264,"carbs":0.0,"fat":0.091,"fiber":0.0,"sugar":0.0,"sodium":0.64,"calcium":0.1,"iron":0.02,"potassium":3.18,"magnesium":0.23,"zinc":0.045,"vitA":0.0,"vitC":0.0,"vitD":0.001,"vitE":0.002,"vitK":0.016},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"garam_masala":{"id":"garam_masala","canonicalName":"Garam Masala","aliases":[],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":3.79,"protein":0.15,"carbs":0.42,"fat":0.17,"fiber":0.22,"sugar":0.01,"sodium":10.0,"calcium":4.3,"iron":0.16,"potassium":12.0,"magnesium":1.8,"zinc":0.03,"vitA":0.5,"vitC":0.03,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"Indian food-composition data / typical","rawCookedState":"Dry blend","sourceNote":"Composite spice blend; typical composition, not a single fixed reference","isMeatOrFish":false,"containsDairyOrEgg":false},"garlic":{"id":"garlic","canonicalName":"Garlic","aliases":["garlic cloves"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":1.49,"protein":0.064,"carbs":0.331,"fat":0.005,"fiber":0.021,"sugar":0.01,"sodium":0.17,"calcium":1.81,"iron":0.017,"potassium":4.01,"magnesium":0.25,"zinc":0.012,"vitA":0.0,"vitC":0.312,"vitD":0.0,"vitE":0.0,"vitK":0.017},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"ginger":{"id":"ginger","canonicalName":"Ginger","aliases":[],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.8,"protein":0.018000000000000002,"carbs":0.17800000000000002,"fat":0.008,"fiber":0.02,"sugar":0.017,"sodium":0.13,"calcium":0.16,"iron":0.006,"potassium":4.15,"magnesium":0.43,"zinc":0.003,"vitA":0.0,"vitC":0.05,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"greek_yogurt":{"id":"greek_yogurt","canonicalName":"Greek Yogurt","aliases":["greek yoghurt"],"category":"dairy","unit":"g","allergens":["dairy"],"proteinSource":true,"nutrientsPerGram":{"kcal":0.73,"protein":0.1,"carbs":0.039,"fat":0.02,"fiber":0.0,"sugar":0.039,"sodium":0.36,"calcium":1.1,"iron":0.001,"potassium":1.41,"magnesium":0.11,"zinc":0.005,"vitA":0.15,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.002},"nutritionSource":"USDA FoodData Central","rawCookedState":"Plain, 2%","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":true},"green_chilies":{"id":"green_chilies","canonicalName":"Green Chilies","aliases":["green chillies"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.4,"protein":0.019,"carbs":0.095,"fat":0.002,"fiber":0.015,"sugar":0.047,"sodium":0.07,"calcium":0.18,"iron":0.012,"potassium":3.4,"magnesium":0.25,"zinc":0.003,"vitA":0.58,"vitC":2.42,"vitD":0.0,"vitE":0.0,"vitK":0.1},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"hemp_seeds":{"id":"hemp_seeds","canonicalName":"Hemp Seeds","aliases":[],"category":"seed_nut","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":5.53,"protein":0.316,"carbs":0.087,"fat":0.488,"fiber":0.04,"sugar":0.015,"sodium":0.05,"calcium":0.7,"iron":0.079,"potassium":12.0,"magnesium":7.0,"zinc":0.099,"vitA":0.01,"vitC":0.005,"vitD":0.0,"vitE":0.023,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Dry","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"herbs":{"id":"herbs","canonicalName":"Herbs","aliases":["mixed herbs"],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.3,"protein":0.03,"carbs":0.06,"fat":0.006,"fiber":0.03,"sugar":0.005,"sodium":0.2,"calcium":1.5,"iron":0.03,"potassium":4.0,"magnesium":0.5,"zinc":0.006,"vitA":3.0,"vitC":0.15,"vitD":0.0,"vitE":0.01,"vitK":3.0},"nutritionSource":"Equivalent","rawCookedState":"Dry/fresh blend","sourceNote":"Generic catch-all in dataset (not a specific USDA food); dried mixed-herb average used","isMeatOrFish":false,"containsDairyOrEgg":false},"high_protein_tortilla":{"id":"high_protein_tortilla","canonicalName":"High-Protein Tortilla","aliases":["tortilla"],"category":"grain","unit":"piece","allergens":["gluten"],"proteinSource":false,"nutrientsPerGram":{"kcal":210,"protein":16,"carbs":26,"fat":6,"fiber":10,"sugar":1,"sodium":320,"calcium":150,"iron":2,"potassium":120,"magnesium":40,"zinc":1.2,"vitA":0,"vitC":0,"vitD":0,"vitE":0.5,"vitK":0},"nutritionSource":"Equivalent (typical commercial product)","rawCookedState":"Prepared","sourceNote":"Branded product category; typical label-average values used","isMeatOrFish":false,"containsDairyOrEgg":false},"kidney_beans":{"id":"kidney_beans","canonicalName":"Kidney Beans","aliases":[],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.27,"protein":0.087,"carbs":0.228,"fat":0.005,"fiber":0.064,"sugar":0.003,"sodium":0.02,"calcium":0.28,"iron":0.028999999999999998,"potassium":4.03,"magnesium":0.45,"zinc":0.01,"vitA":0.0,"vitC":0.012,"vitD":0.0,"vitE":0.0,"vitK":0.084},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"lean_ground_beef":{"id":"lean_ground_beef","canonicalName":"Lean Ground Beef","aliases":["ground beef"],"category":"protein","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.76,"protein":0.2,"carbs":0.0,"fat":0.1,"fiber":0.0,"sugar":0.0,"sodium":0.66,"calcium":0.12,"iron":0.021,"potassium":3.18,"magnesium":0.2,"zinc":0.046,"vitA":0.0,"vitC":0.0,"vitD":0.001,"vitE":0.002,"vitK":0.013999999999999999},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked, 90/10","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"lemon":{"id":"lemon","canonicalName":"Lemon","aliases":[],"category":"produce","unit":"piece","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":29,"protein":1.1,"carbs":9.3,"fat":0.3,"fiber":2.8,"sugar":2.5,"sodium":2,"calcium":26,"iron":0.6,"potassium":138,"magnesium":8,"zinc":0.06,"vitA":1,"vitC":53,"vitD":0,"vitE":0.2,"vitK":0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Whole, ~58g","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"lemon_dressing":{"id":"lemon_dressing","canonicalName":"Lemon Dressing","aliases":[],"category":"sauce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":3.2,"protein":0.005,"carbs":0.07,"fat":0.33,"fiber":0.0,"sugar":0.04,"sodium":4.8,"calcium":0.1,"iron":0.002,"potassium":0.4,"magnesium":0.05,"zinc":0.0005,"vitA":0.0,"vitC":0.1,"vitD":0.0,"vitE":0.03,"vitK":0.0},"nutritionSource":"Equivalent (typical vinaigrette)","rawCookedState":"Prepared","sourceNote":"Homemade-style lemon vinaigrette composition; no single fixed reference","isMeatOrFish":false,"containsDairyOrEgg":false},"lemon_juice":{"id":"lemon_juice","canonicalName":"Lemon Juice","aliases":[],"category":"sauce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.22,"protein":0.004,"carbs":0.069,"fat":0.002,"fiber":0.003,"sugar":0.025,"sodium":0.01,"calcium":0.06,"iron":0.001,"potassium":1.03,"magnesium":0.06,"zinc":0.0005,"vitA":0.0,"vitC":0.387,"vitD":0.0,"vitE":0.001,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Fresh","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"lentils":{"id":"lentils","canonicalName":"Lentils","aliases":["dal"],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.16,"protein":0.09,"carbs":0.201,"fat":0.004,"fiber":0.079,"sugar":0.018000000000000002,"sodium":0.02,"calcium":0.19,"iron":0.033,"potassium":3.69,"magnesium":0.36,"zinc":0.013000000000000001,"vitA":0.01,"vitC":0.015,"vitD":0.0,"vitE":0.001,"vitK":0.017},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"low_sodium_teriyaki_sauce":{"id":"low_sodium_teriyaki_sauce","canonicalName":"Low-Sodium Teriyaki Sauce","aliases":["teriyaki sauce"],"category":"sauce","unit":"g","allergens":["soy","gluten"],"proteinSource":false,"nutrientsPerGram":{"kcal":0.89,"protein":0.059000000000000004,"carbs":0.15,"fat":0.001,"fiber":0.003,"sugar":0.1,"sodium":6.0,"calcium":0.15,"iron":0.009000000000000001,"potassium":1.4,"magnesium":0.2,"zinc":0.003,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"Equivalent (typical commercial product)","rawCookedState":"Prepared","sourceNote":"Branded product category; typical low-sodium label values used","isMeatOrFish":false,"containsDairyOrEgg":false},"minced_chicken":{"id":"minced_chicken","canonicalName":"Minced Chicken","aliases":["chicken mince","chicken keema"],"category":"protein","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.43,"protein":0.174,"carbs":0.0,"fat":0.078,"fiber":0.0,"sugar":0.0,"sodium":0.65,"calcium":0.12,"iron":0.01,"potassium":2.29,"magnesium":0.2,"zinc":0.013999999999999999,"vitA":0.1,"vitC":0.0,"vitD":0.001,"vitE":0.002,"vitK":0.003},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"moong_dal_sprouts":{"id":"moong_dal_sprouts","canonicalName":"Moong Dal Sprouts","aliases":["sprouted moong"],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":0.3,"protein":0.03,"carbs":0.059000000000000004,"fat":0.002,"fiber":0.018000000000000002,"sugar":0.040999999999999995,"sodium":0.04,"calcium":0.13,"iron":0.005,"potassium":1.49,"magnesium":0.21,"zinc":0.004,"vitA":0.02,"vitC":0.132,"vitD":0.0,"vitE":0.0,"vitK":0.33},"nutritionSource":"Indian food-composition data / typical","rawCookedState":"Sprouted, raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"mung_beans":{"id":"mung_beans","canonicalName":"Mung Beans","aliases":["green gram"],"category":"legume","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.05,"protein":0.07,"carbs":0.192,"fat":0.004,"fiber":0.076,"sugar":0.02,"sodium":0.02,"calcium":0.27,"iron":0.013999999999999999,"potassium":2.66,"magnesium":0.48,"zinc":0.008,"vitA":0.04,"vitC":0.048,"vitD":0.0,"vitE":0.0,"vitK":0.027000000000000003},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"mustard_seeds":{"id":"mustard_seeds","canonicalName":"Mustard Seeds","aliases":[],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":5.08,"protein":0.261,"carbs":0.281,"fat":0.36200000000000004,"fiber":0.122,"sugar":0.068,"sodium":0.13,"calcium":2.66,"iron":0.092,"potassium":7.38,"magnesium":3.7,"zinc":0.061,"vitA":0.03,"vitC":0.03,"vitD":0.0,"vitE":0.051,"vitK":0.05},"nutritionSource":"USDA FoodData Central","rawCookedState":"Dry","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"oats":{"id":"oats","canonicalName":"Oats","aliases":["rolled oats"],"category":"grain","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":3.89,"protein":0.16899999999999998,"carbs":0.6629999999999999,"fat":0.069,"fiber":0.106,"sugar":0.01,"sodium":0.02,"calcium":0.54,"iron":0.047,"potassium":4.29,"magnesium":1.77,"zinc":0.04,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.004,"vitK":0.02},"nutritionSource":"USDA FoodData Central","rawCookedState":"Dry","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"olive_oil":{"id":"olive_oil","canonicalName":"Olive Oil","aliases":[],"category":"pantry","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":8.84,"protein":0.0,"carbs":0.0,"fat":1.0,"fiber":0.0,"sugar":0.0,"sodium":0.02,"calcium":0.01,"iron":0.006,"potassium":0.01,"magnesium":0.0,"zinc":0.0,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.14400000000000002,"vitK":0.602},"nutritionSource":"USDA FoodData Central","rawCookedState":"\u2014","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"olives":{"id":"olives","canonicalName":"Olives","aliases":[],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":1.15,"protein":0.008,"carbs":0.063,"fat":0.107,"fiber":0.032,"sugar":0.0,"sodium":7.35,"calcium":0.52,"iron":0.033,"potassium":0.08,"magnesium":0.04,"zinc":0.002,"vitA":0.2,"vitC":0.0,"vitD":0.0,"vitE":0.017,"vitK":0.013999999999999999},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cured","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"onion":{"id":"onion","canonicalName":"Onion","aliases":["chopped onion","onions"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.4,"protein":0.011000000000000001,"carbs":0.09300000000000001,"fat":0.001,"fiber":0.017,"sugar":0.042,"sodium":0.04,"calcium":0.23,"iron":0.002,"potassium":1.46,"magnesium":0.1,"zinc":0.002,"vitA":0.0,"vitC":0.07400000000000001,"vitD":0.0,"vitE":0.0002,"vitK":0.004},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"paneer":{"id":"paneer","canonicalName":"Paneer","aliases":["indian cottage cheese"],"category":"dairy","unit":"g","allergens":["dairy"],"proteinSource":true,"nutrientsPerGram":{"kcal":2.65,"protein":0.183,"carbs":0.012,"fat":0.20800000000000002,"fiber":0.0,"sugar":0.012,"sodium":0.18,"calcium":2.08,"iron":0.002,"potassium":0.72,"magnesium":0.1,"zinc":0.011000000000000001,"vitA":1.8,"vitC":0.0,"vitD":0.0,"vitE":0.006,"vitK":0.023},"nutritionSource":"Indian food-composition data / typical (verified)","rawCookedState":"Fresh","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":true},"parmesan":{"id":"parmesan","canonicalName":"Parmesan","aliases":[],"category":"dairy","unit":"g","allergens":["dairy"],"proteinSource":false,"nutrientsPerGram":{"kcal":3.92,"protein":0.358,"carbs":0.032,"fat":0.258,"fiber":0.0,"sugar":0.009000000000000001,"sodium":15.29,"calcium":11.84,"iron":0.008,"potassium":1.25,"magnesium":0.44,"zinc":0.027999999999999997,"vitA":1.8,"vitC":0.0,"vitD":0.009000000000000001,"vitE":0.002,"vitK":0.017},"nutritionSource":"USDA FoodData Central","rawCookedState":"Aged","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":true},"peanut_butter":{"id":"peanut_butter","canonicalName":"Peanut Butter","aliases":[],"category":"pantry","unit":"g","allergens":["peanut"],"proteinSource":false,"nutrientsPerGram":{"kcal":5.88,"protein":0.25,"carbs":0.2,"fat":0.5,"fiber":0.06,"sugar":0.09,"sodium":0.17,"calcium":0.43,"iron":0.019,"potassium":5.58,"magnesium":1.68,"zinc":0.028999999999999998,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.049,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Prepared","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"peas":{"id":"peas","canonicalName":"Peas","aliases":["green peas"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.81,"protein":0.054000000000000006,"carbs":0.145,"fat":0.004,"fiber":0.057,"sugar":0.057,"sodium":0.05,"calcium":0.25,"iron":0.015,"potassium":2.44,"magnesium":0.33,"zinc":0.012,"vitA":0.38,"vitC":0.4,"vitD":0.0,"vitE":0.001,"vitK":0.248},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"protein_powder":{"id":"protein_powder","canonicalName":"Protein Powder","aliases":[],"category":"powder","unit":"g","allergens":["dairy"],"proteinSource":true,"nutrientsPerGram":{"kcal":3.7,"protein":0.8,"carbs":0.08,"fat":0.03,"fiber":0.02,"sugar":0.03,"sodium":1.5,"calcium":1.2,"iron":0.03,"potassium":3.0,"magnesium":0.6,"zinc":0.04,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"Equivalent (typical commercial product)","rawCookedState":"Powder","sourceNote":"Generic blend/isolate product category; typical label-average values used","isMeatOrFish":false,"containsDairyOrEgg":true},"pumpkin_seeds":{"id":"pumpkin_seeds","canonicalName":"Pumpkin Seeds","aliases":[],"category":"seed_nut","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":5.59,"protein":0.302,"carbs":0.107,"fat":0.49,"fiber":0.06,"sugar":0.013999999999999999,"sodium":0.07,"calcium":0.46,"iron":0.08800000000000001,"potassium":8.09,"magnesium":5.92,"zinc":0.078,"vitA":0.16,"vitC":0.019,"vitD":0.0,"vitE":0.006,"vitK":0.073},"nutritionSource":"USDA FoodData Central","rawCookedState":"Roasted","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"quinoa":{"id":"quinoa","canonicalName":"Quinoa","aliases":[],"category":"grain","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":1.2,"protein":0.044000000000000004,"carbs":0.213,"fat":0.019,"fiber":0.027999999999999997,"sugar":0.009000000000000001,"sodium":0.07,"calcium":0.17,"iron":0.015,"potassium":1.72,"magnesium":0.64,"zinc":0.011000000000000001,"vitA":0.01,"vitC":0.0,"vitD":0.0,"vitE":0.006,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"red_onion":{"id":"red_onion","canonicalName":"Red Onion","aliases":[],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.4,"protein":0.011000000000000001,"carbs":0.09300000000000001,"fat":0.001,"fiber":0.017,"sugar":0.042,"sodium":0.04,"calcium":0.23,"iron":0.002,"potassium":1.46,"magnesium":0.1,"zinc":0.002,"vitA":0.0,"vitC":0.07400000000000001,"vitD":0.0,"vitE":0.0002,"vitK":0.004},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw","sourceNote":"Same composition as yellow onion","isMeatOrFish":false,"containsDairyOrEgg":false},"salmon_fillet":{"id":"salmon_fillet","canonicalName":"Salmon Fillet","aliases":["salmon"],"category":"protein","unit":"g","allergens":["fish"],"proteinSource":true,"nutrientsPerGram":{"kcal":2.08,"protein":0.2,"carbs":0.0,"fat":0.13,"fiber":0.0,"sugar":0.0,"sodium":0.59,"calcium":0.09,"iron":0.003,"potassium":3.63,"magnesium":0.27,"zinc":0.004,"vitA":0.58,"vitC":0.0,"vitD":0.11,"vitE":0.036000000000000004,"vitK":0.005},"nutritionSource":"USDA FoodData Central (verified)","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"salsa":{"id":"salsa","canonicalName":"Salsa","aliases":[],"category":"sauce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.36,"protein":0.015,"carbs":0.076,"fat":0.002,"fiber":0.018000000000000002,"sugar":0.04,"sodium":4.3,"calcium":0.15,"iron":0.006,"potassium":2.2,"magnesium":0.12,"zinc":0.002,"vitA":0.3,"vitC":0.15,"vitD":0.0,"vitE":0.005,"vitK":0.04},"nutritionSource":"Equivalent (typical commercial product)","rawCookedState":"Prepared","sourceNote":"Typical tomato-based salsa composition; no single fixed reference","isMeatOrFish":false,"containsDairyOrEgg":false},"sea_salt":{"id":"sea_salt","canonicalName":"Sea Salt","aliases":["salt"],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.0,"protein":0.0,"carbs":0.0,"fat":0.0,"fiber":0.0,"sugar":0.0,"sodium":387.58,"calcium":0.24,"iron":0.003,"potassium":0.08,"magnesium":0.02,"zinc":0.0,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"\u2014","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"shrimp":{"id":"shrimp","canonicalName":"Shrimp","aliases":["prawns"],"category":"protein","unit":"g","allergens":["shellfish"],"proteinSource":true,"nutrientsPerGram":{"kcal":0.99,"protein":0.24,"carbs":0.002,"fat":0.003,"fiber":0.0,"sugar":0.0,"sodium":1.11,"calcium":0.7,"iron":0.005,"potassium":2.59,"magnesium":0.29,"zinc":0.016,"vitA":0.25,"vitC":0.0,"vitD":0.0,"vitE":0.013000000000000001,"vitK":0.003},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"spices":{"id":"spices","canonicalName":"Spices","aliases":["mixed spices"],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":2.8,"protein":0.1,"carbs":0.45,"fat":0.08,"fiber":0.15,"sugar":0.03,"sodium":1.2,"calcium":3.0,"iron":0.15,"potassium":10.0,"magnesium":1.5,"zinc":0.02,"vitA":0.5,"vitC":0.05,"vitD":0.0,"vitE":0.01,"vitK":0.1},"nutritionSource":"Equivalent","rawCookedState":"Dry blend","sourceNote":"Generic catch-all in dataset (not a specific USDA food); average dry-spice-blend proxy used","isMeatOrFish":false,"containsDairyOrEgg":false},"spinach":{"id":"spinach","canonicalName":"Spinach","aliases":[],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.23,"protein":0.028999999999999998,"carbs":0.036000000000000004,"fat":0.004,"fiber":0.022000000000000002,"sugar":0.004,"sodium":0.79,"calcium":0.99,"iron":0.027000000000000003,"potassium":5.58,"magnesium":0.79,"zinc":0.005,"vitA":4.69,"vitC":0.281,"vitD":0.0,"vitE":0.02,"vitK":4.83},"nutritionSource":"USDA FoodData Central (verified)","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"tandoori_marination":{"id":"tandoori_marination","canonicalName":"Tandoori Marination","aliases":[],"category":"sauce","unit":"g","allergens":["dairy"],"proteinSource":false,"nutrientsPerGram":{"kcal":1.2,"protein":0.06,"carbs":0.1,"fat":0.07,"fiber":0.01,"sugar":0.04,"sodium":6.5,"calcium":0.6,"iron":0.012,"potassium":1.8,"magnesium":0.25,"zinc":0.006,"vitA":0.4,"vitC":0.03,"vitD":0.0,"vitE":0.008,"vitK":0.02},"nutritionSource":"Equivalent (typical yogurt-spice marinade)","rawCookedState":"Prepared","sourceNote":"Composite marinade (yogurt + spices); no single fixed reference","isMeatOrFish":false,"containsDairyOrEgg":true},"tofu":{"id":"tofu","canonicalName":"Tofu","aliases":[],"category":"protein","unit":"g","allergens":["soy"],"proteinSource":true,"nutrientsPerGram":{"kcal":0.76,"protein":0.08,"carbs":0.019,"fat":0.048,"fiber":0.003,"sugar":0.006,"sodium":0.07,"calcium":3.5,"iron":0.054000000000000006,"potassium":1.21,"magnesium":0.3,"zinc":0.008,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.024},"nutritionSource":"USDA FoodData Central","rawCookedState":"Raw, regular","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"tomato":{"id":"tomato","canonicalName":"Tomato","aliases":["tomatoes"],"category":"produce","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":0.18,"protein":0.009000000000000001,"carbs":0.039,"fat":0.002,"fiber":0.012,"sugar":0.026000000000000002,"sodium":0.05,"calcium":0.1,"iron":0.003,"potassium":2.37,"magnesium":0.11,"zinc":0.002,"vitA":0.42,"vitC":0.13699999999999998,"vitD":0.0,"vitE":0.005,"vitK":0.079},"nutritionSource":"USDA FoodData Central (verified)","rawCookedState":"Raw","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"turkey_bacon":{"id":"turkey_bacon","canonicalName":"Turkey Bacon","aliases":[],"category":"protein","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":2.1,"protein":0.17,"carbs":0.015,"fat":0.15,"fiber":0.0,"sugar":0.005,"sodium":13.5,"calcium":0.1,"iron":0.009000000000000001,"potassium":2.2,"magnesium":0.15,"zinc":0.015,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.001,"vitK":0.0},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"turkey_breast":{"id":"turkey_breast","canonicalName":"Turkey Breast","aliases":["turkey"],"category":"protein","unit":"g","allergens":[],"proteinSource":true,"nutrientsPerGram":{"kcal":1.35,"protein":0.3,"carbs":0.0,"fat":0.017,"fiber":0.0,"sugar":0.0,"sodium":0.63,"calcium":0.13,"iron":0.011000000000000001,"potassium":2.39,"magnesium":0.26,"zinc":0.015,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.001,"vitK":0.001},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":true,"containsDairyOrEgg":false},"turmeric":{"id":"turmeric","canonicalName":"Turmeric","aliases":[],"category":"spice","unit":"g","allergens":[],"proteinSource":false,"nutrientsPerGram":{"kcal":3.12,"protein":0.09699999999999999,"carbs":0.6709999999999999,"fat":0.033,"fiber":0.22699999999999998,"sugar":0.032,"sodium":0.27,"calcium":1.83,"iron":0.414,"potassium":25.25,"magnesium":2.08,"zinc":0.044000000000000004,"vitA":0.0,"vitC":0.259,"vitD":0.0,"vitE":0.044000000000000004,"vitK":0.015},"nutritionSource":"USDA FoodData Central","rawCookedState":"Dry","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"whey_protein":{"id":"whey_protein","canonicalName":"Whey Protein","aliases":[],"category":"powder","unit":"g","allergens":["dairy"],"proteinSource":true,"nutrientsPerGram":{"kcal":4.0,"protein":0.8,"carbs":0.08,"fat":0.05,"fiber":0.01,"sugar":0.04,"sodium":2.0,"calcium":3.0,"iron":0.01,"potassium":4.0,"magnesium":0.5,"zinc":0.02,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.0,"vitK":0.0},"nutritionSource":"Equivalent (typical commercial product)","rawCookedState":"Powder","sourceNote":"Generic whey isolate/concentrate category; typical label-average values used","isMeatOrFish":false,"containsDairyOrEgg":true},"whole_wheat_spaghetti":{"id":"whole_wheat_spaghetti","canonicalName":"Whole Wheat Spaghetti","aliases":["wholewheat pasta"],"category":"grain","unit":"g","allergens":["gluten"],"proteinSource":false,"nutrientsPerGram":{"kcal":1.24,"protein":0.053,"carbs":0.265,"fat":0.011000000000000001,"fiber":0.039,"sugar":0.006999999999999999,"sodium":0.04,"calcium":0.13,"iron":0.013000000000000001,"potassium":0.66,"magnesium":0.29,"zinc":0.009000000000000001,"vitA":0.0,"vitC":0.0,"vitD":0.0,"vitE":0.001,"vitK":0.003},"nutritionSource":"USDA FoodData Central","rawCookedState":"Cooked","sourceNote":null,"isMeatOrFish":false,"containsDairyOrEgg":false},"whole_wheat_wrap":{"id":"whole_wheat_wrap","canonicalName":"Whole Wheat Wrap","aliases":["wrap"],"category":"grain","unit":"piece","allergens":["gluten"],"proteinSource":false,"nutrientsPerGram":{"kcal":210,"protein":7,"carbs":35,"fat":5,"fiber":4,"sugar":2,"sodium":380,"calcium":60,"iron":1.8,"potassium":110,"magnesium":30,"zinc":0.8,"vitA":0,"vitC":0,"vitD":0,"vitE":0.3,"vitK":0},"nutritionSource":"Equivalent (typical commercial product)","rawCookedState":"Prepared","sourceNote":"Branded product category; typical label-average values used","isMeatOrFish":false,"containsDairyOrEgg":false}},"recipes":[]}</script>
+<script>
+/* ===================== DATA LOAD ===================== */
+const APP_DATA = JSON.parse(document.getElementById('app-data').textContent);
+const ingredientDB = APP_DATA.ingredientDB;
+
+const MEAL_TYPES = ['Breakfast','Lunch','Dinner','Snack'];
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const NUT_KEYS = ['kcal','protein','carbs','fat','fiber','sugar','sodium','calcium','iron','potassium','magnesium','zinc','vitA','vitC','vitD','vitE','vitK'];
+const MACROS = ['kcal','protein','carbs','fat'];
+const MICROS = ['fiber','sugar','sodium','calcium','iron','potassium','magnesium','zinc','vitA','vitC','vitD','vitE','vitK'];
+const LIMIT_NUTRIENTS = ['sodium','sugar'];
+const NUTRIENT_LABEL = {kcal:'Calories',protein:'Protein',carbs:'Carbs',fat:'Fat',fiber:'Fiber',sugar:'Sugar',sodium:'Sodium',calcium:'Calcium',iron:'Iron',potassium:'Potassium',magnesium:'Magnesium',zinc:'Zinc',vitA:'Vitamin A',vitC:'Vitamin C',vitD:'Vitamin D',vitE:'Vitamin E',vitK:'Vitamin K'};
+const NUTRIENT_UNIT = {kcal:'kcal',protein:'g',carbs:'g',fat:'g',fiber:'g',sugar:'g',sodium:'mg',calcium:'mg',iron:'mg',potassium:'mg',magnesium:'mg',zinc:'mg',vitA:'mcg',vitC:'mg',vitD:'mcg',vitE:'mg',vitK:'mcg'};
+const ALLERGEN_LABELS = {dairy:'Dairy',egg:'Egg',gluten:'Gluten',shellfish:'Shellfish',fish:'Fish',soy:'Soy',tree_nut:'Tree nut',peanut:'Peanut'};
+const ALLERGEN_FULL_LABELS = {dairy:'Dairy',egg:'Egg',peanut:'Peanut',tree_nut:'Tree nut',soy:'Soy',wheat:'Wheat',gluten:'Gluten',fish:'Fish',shellfish:'Shellfish',sesame:'Sesame'};
+const INGREDIENT_STATE_OPTIONS = ['raw','cooked','boiled','steamed','grilled','roasted','fried','baked','dried','canned','frozen'];
+const STREAK_THRESHOLD = 0.75; // fraction of planned meals that must be eaten for a day to count toward a streak
+
+const PRESETS = {
+  balanced:{label:'Balanced', pct:{protein:0.20, carbs:0.50, fat:0.30}},
+  high_protein:{label:'High protein', pct:{protein:0.35, carbs:0.40, fat:0.25}},
+  low_carb:{label:'Low carb', pct:{protein:0.35, carbs:0.20, fat:0.45}}
+};
+
+/* ===================== STORAGE ===================== */
+const hasStorage = !!(window.storage && window.storage.get && window.storage.set);
+async function storeGet(k){ const r = await window.storage.get(k, false); return r ? r.value : null; }
+async function storeSet(k, v){ return window.storage.set(k, v, false); }
+
+function saveRecipes(){ if(!hasStorage) return; storeSet('larder_recipes_v2', JSON.stringify(recipeDB)).catch(e => console.error(e)); }
+function savePlan(){ if(!hasStorage) return; storeSet('larder_plan_v2', JSON.stringify(state.plan)).catch(e => console.error(e)); }
+function saveTracker(){ if(!hasStorage) return; storeSet('larder_tracker_v2', JSON.stringify(state.tracker)).catch(e => console.error(e)); }
+function saveCustomIngredients(){ if(!hasStorage) return; storeSet('larder_custom_ingredients_v1', JSON.stringify(state.customIngredients)).catch(e => console.error(e)); }
+function saveSettings(){
+  if(!hasStorage) return;
+  const s = {
+    targets: state.targets, activePreset: state.activePreset, pantry: state.pantry,
+    allergyExclude: [...state.allergyExclude], vegetarianOnly: state.vegetarianOnly,
+    veganOnly: state.veganOnly, shoppingChecked: state.shoppingChecked,
+    favorites: [...state.favorites], recentlyUsed: state.recentlyUsed
+  };
+  storeSet('larder_settings_v2', JSON.stringify(s)).catch(e => console.error(e));
+}
+
+/* ===================== STATE ===================== */
+let recipeDB = [];
+const state = {
+  plan: {},
+  tracker: {}, // { 'YYYY-MM-DD': { Breakfast:{status,ingredients?,name?}, ... } }
+  targets: {kcal:2000, protein:100, carbs:250, fat:65, fiber:30, sugar:50, sodium:2300, calcium:1000, iron:18, potassium:3400, magnesium:400, zinc:11, vitA:900, vitC:90, vitD:20, vitE:15, vitK:120},
+  activePreset: 'balanced',
+  pantry: {},
+  allergyExclude: new Set(),
+  vegetarianOnly: false,
+  veganOnly: false,
+  libSearch: '', libMealType: 'All', libCuisine: 'All', libCollection: 'all',
+  pantryMatchMode: false,
+  shoppingChecked: {},
+  favorites: new Set(),
+  recentlyUsed: [],
+  nutritionActiveDay: null, // set on init to today's weekday
+  dashboardDay: null,       // weekday currently shown on Plan dashboard
+  trackerYear: new Date().getFullYear(),
+  customIngredients: {}     // web-sourced / user-entered ingredients, merged into ingredientDB at runtime
+};
+
+let editingKey = null;
+let builderEditingId = null;
+let builderIngredients = [];
+let chooserContext = null;       // {day, meal}
+let swapContext = null;          // {day, meal}
+let planWeekDraft = null;        // { 'Mon__Breakfast': recipeId, ... }
+let trackerActionDate = null;    // date key currently in day-detail modal
+let logFoodTarget = null;        // {dateKey, mealType|null}
+
+function key(day, meal){ return day + '__' + meal; }
+function genId(){ return 'rec_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+
+/* ===================== DATE HELPERS ===================== */
+function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+function dateKeyFromDate(d){ return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()); }
+function todayKey(){ return dateKeyFromDate(new Date()); }
+function weekdayLabelFromDate(d){
+  // JS getDay(): 0=Sun..6=Sat. Our DAYS array is Mon..Sun.
+  const idx = (d.getDay() + 6) % 7; // Mon=0 ... Sun=6
+  return DAYS[idx];
+}
+function isFutureKey(dateKey){ return dateKey > todayKey(); }
+function addDays(d, n){ const c = new Date(d); c.setDate(c.getDate()+n); return c; }
+function formatLongDate(d){ return d.toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric', year:'numeric'}); }
+function formatShortDate(d){ return d.toLocaleDateString(undefined, {month:'short', day:'numeric'}); }
+
+/* ===================== SHARED CALCULATION (single source of truth) ===================== */
+function calcNutrition(ingredientRows){
+  const totals = {}; NUT_KEYS.forEach(k => totals[k] = 0);
+  (ingredientRows||[]).forEach(row => {
+    const ing = ingredientDB[row.id];
+    if(!ing) return;
+    NUT_KEYS.forEach(k => totals[k] += (ing.nutrientsPerGram[k] || 0) * row.qty);
+  });
+  return totals;
+}
+function calcMealNutrients(instance){ return calcNutrition(instance.ingredients); }
+function calcDayNutrients(day){
+  const totals = {}; NUT_KEYS.forEach(k => totals[k] = 0);
+  MEAL_TYPES.forEach(meal => {
+    const slot = state.plan[key(day, meal)];
+    if(slot){ const m = calcMealNutrients(slot); NUT_KEYS.forEach(k => totals[k] += m[k]); }
+  });
+  return totals;
+}
+function calcWeekNutrients(){
+  const totals = {}; NUT_KEYS.forEach(k => totals[k] = 0);
+  DAYS.forEach(day => { const d = calcDayNutrients(day); NUT_KEYS.forEach(k => totals[k] += d[k]); });
+  return totals;
+}
+function barColor(actual, target, isLimit){
+  if(target <= 0) return 'var(--ink-faint)';
+  const ratio = actual / target;
+  if(isLimit) return ratio > 1 ? 'var(--rust)' : 'var(--herb)';
+  if(ratio < 0.85) return 'var(--mustard)';
+  if(ratio > 1.15) return 'var(--rust)';
+  return 'var(--herb)';
+}
+function statusLabel(actual, target, isLimit){
+  if(target <= 0) return {text:'', cls:''};
+  const ratio = actual/target;
+  if(isLimit) return ratio > 1 ? {text:'Above', cls:'high'} : {text:'On track', cls:'ok'};
+  if(ratio < 0.85) return {text:'Below target', cls:'low'};
+  if(ratio > 1.15) return {text:'Above target', cls:'high'};
+  return {text:'On track', cls:'ok'};
+}
+function getCuisines(){ return [...new Set(recipeDB.map(r => r.cuisine).filter(Boolean))].sort(); }
+
+/* ===================== DIET / ALLERGY FILTER ===================== */
+function recipePassesFilters(recipe){
+  if(state.vegetarianOnly && !recipe.vegetarian) return false;
+  if(state.veganOnly && !recipe.vegan) return false;
+  for(const a of recipe.allergens){ if(state.allergyExclude.has(a)) return false; }
+  return true;
+}
+function ingredientPassesDiet(ing){
+  if(state.veganOnly && (ing.isMeatOrFish || ing.containsDairyOrEgg)) return false;
+  if(state.vegetarianOnly && ing.isMeatOrFish) return false;
+  for(const a of ing.allergens){ if(state.allergyExclude.has(a)) return false; }
+  return true;
+}
+function computeRecipeFlags(ingredients){
+  let isMeatOrFish = false; const allergenSet = new Set();
+  ingredients.forEach(row => {
+    const ing = ingredientDB[row.id];
+    if(!ing) return;
+    if(ing.isMeatOrFish) isMeatOrFish = true;
+    ing.allergens.forEach(a => allergenSet.add(a));
+  });
+  const vegetarian = !isMeatOrFish;
+  const vegan = vegetarian && !(allergenSet.has('dairy') || allergenSet.has('egg'));
+  return {vegetarian, vegan, allergens: [...allergenSet]};
+}
+function pantryQty(id){ const p = state.pantry[id]; return p ? (p.qty||0) : 0; }
+function pantryExpiry(id){ const p = state.pantry[id]; return p ? (p.expiresOn||null) : null; }
+function getFreshnessInfo(expiresOn){
+  if(!expiresOn) return {label:'', cls:'', days:null};
+  const today = new Date(todayKey()+'T00:00:00');
+  const exp = new Date(expiresOn+'T00:00:00');
+  const days = Math.round((exp-today)/86400000);
+  if(days < 0) return {label:'Expired', cls:'rust', days};
+  if(days === 0) return {label:'Use today', cls:'rust', days};
+  if(days <= 2) return {label:'Use soon — '+days+'d left', cls:'warn', days};
+  return {label:'Fresh', cls:'', days};
+}
+function getUseSoonItems(){
+  return Object.keys(state.pantry).map(id => ({id, exp: pantryExpiry(id)}))
+    .filter(x => x.exp)
+    .map(x => ({...x, info: getFreshnessInfo(x.exp)}))
+    .filter(x => x.info.days !== null && x.info.days <= 2)
+    .sort((a,b) => a.info.days - b.info.days);
+}
+function pantryMatchInfo(recipe){
+  const total = recipe.ingredients.length;
+  const have = recipe.ingredients.filter(i => pantryQty(i.id) > 0).length;
+  return {have, total, pct: total > 0 ? Math.round((have/total)*100) : 0};
+}
+
+/* ===================== TABS ===================== */
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'shopping'){ renderPantryList(); renderShopping(); }
+    if(btn.dataset.tab === 'nutrition') renderNutritionTab();
+    if(btn.dataset.tab === 'library') renderLibrary();
+    if(btn.dataset.tab === 'plan') renderPlanDashboard();
+    if(btn.dataset.tab === 'tracker') renderTrackerTab();
+  });
+});
+
+/* ===================== PLAN DASHBOARD (home screen) ===================== */
+function renderPlanDashboard(){
+  const day = state.dashboardDay;
+  const isToday = day === weekdayLabelFromDate(new Date());
+  document.getElementById('dash-heading').textContent = isToday ? 'Today — ' + day : day;
+
+  const nav = document.getElementById('day-nav');
+  const idx = DAYS.indexOf(day);
+  nav.innerHTML = `
+    <button class="nav-arrow" onclick="shiftDashboardDay(-1)" title="Previous day">&#8249;</button>
+    ${DAYS.map(d => `<button class="day-chip ${d===day?'active':''}" onclick="setDashboardDay('${d}')">${d}</button>`).join('')}
+    <button class="nav-arrow" onclick="shiftDashboardDay(1)" title="Next day">&#8250;</button>
+    <button class="today-btn" onclick="setDashboardDay('${weekdayLabelFromDate(new Date())}')">Today</button>
+  `;
+
+  const actual = calcDayNutrients(day);
+  const metrics = ['kcal','protein','carbs','fat','fiber'];
+  document.getElementById('dash-metrics').innerHTML = metrics.map(n => {
+    const target = state.targets[n];
+    const isLimit = LIMIT_NUTRIENTS.includes(n);
+    const pct = target > 0 ? Math.min(130, (actual[n]/target)*100) : 0;
+    const st = statusLabel(actual[n], target, isLimit);
+    return `<div class="dm-cell">
+      <div class="dm-label">${NUTRIENT_LABEL[n]}</div>
+      <div class="dm-value">${Math.round(actual[n]).toLocaleString()} <small>/ ${Math.round(target).toLocaleString()}${NUTRIENT_UNIT[n]}</small></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${barColor(actual[n],target,isLimit)}"></div></div>
+      <div class="dm-status ${st.cls}">${st.text}</div>
+    </div>`;
+  }).join('');
+
+  const plannedCount = MEAL_TYPES.filter(m => state.plan[key(day,m)]).length;
+  document.getElementById('dash-meals-planned').innerHTML = `Meals planned: <strong>${plannedCount}/4</strong>`;
+
+  if(isToday){
+    const tKey = todayKey();
+    const completedCount = MEAL_TYPES.filter(m => {
+      const e = getTrackerEntry(tKey, m);
+      return e.status === 'eaten' || e.status === 'replaced';
+    }).length;
+    document.getElementById('dash-meals-completed').innerHTML = `Meals completed today: <strong>${completedCount}/4</strong>`;
+  } else {
+    document.getElementById('dash-meals-completed').innerHTML = '';
+  }
+
+  renderUseSoonPanel();
+  renderDayMealsList(day, isToday);
+  renderPlanTable();
+}
+function renderUseSoonPanel(){
+  const wrap = document.getElementById('use-soon-panel');
+  const items = getUseSoonItems();
+  if(items.length === 0){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div style="border:1px solid var(--line);border-radius:var(--radius);background:var(--mustard-wash);padding:12px 14px;margin-bottom:16px;">
+    <div style="font-size:12.5px;font-weight:600;color:#8a5f1d;margin-bottom:6px;">Use soon</div>
+    ${items.map(x => {
+      const ing = ingredientDB[x.id];
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px;">
+        <span>${ing.canonicalName} — ${pantryQty(x.id)}${ing.unit==='piece'?' pc':'g'} <span class="badge ${x.info.cls}">${x.info.label}</span></span>
+        <button class="btn-sm secondary" onclick="findRecipesForIngredient('${x.id}')">Find recipes</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function findRecipesForIngredient(ingredientId){
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+  document.querySelector('nav.tabs button[data-tab="library"]').classList.add('active');
+  document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-library').classList.add('active');
+  state.libSearch = '';
+  document.getElementById('lib-search').value = '';
+  state.pantryMatchMode = true;
+  document.getElementById('pantry-match-toggle').classList.add('active');
+  renderLibrary();
+}
+function setDashboardDay(d){ state.dashboardDay = d; renderPlanDashboard(); }function shiftDashboardDay(delta){
+  const idx = DAYS.indexOf(state.dashboardDay);
+  const next = (idx + delta + DAYS.length) % DAYS.length;
+  state.dashboardDay = DAYS[next];
+  renderPlanDashboard();
+}
+
+function renderDayMealsList(day, isToday){
+  const wrap = document.getElementById('day-meals-list');
+  const tKey = todayKey();
+  wrap.innerHTML = MEAL_TYPES.map(meal => {
+    const slot = state.plan[key(day, meal)];
+    if(!slot){
+      return `<div class="empty-meal-row"><button onclick="openChooser('${day}','${meal}')">+ Add ${meal.toLowerCase()}</button></div>`;
+    }
+    const totals = calcMealNutrients(slot);
+    let statusHtml = '';
+    if(isToday){
+      const entry = getTrackerEntry(tKey, meal);
+      const labelMap = {planned:'Planned', eaten:'Eaten', replaced:'Swapped', skipped:'Skipped'};
+      statusHtml = `<span class="track-status ${entry.status}">${labelMap[entry.status]}</span>`;
+    }
+    return `<div class="day-meal-row">
+      <div class="dm-info">
+        <span class="meal-type-tag">${meal}</span>
+        <span class="meal-name">${slot.recipeName}</span>
+        <span class="meal-kcal">${Math.round(totals.kcal)} kcal</span>
+        ${statusHtml}
+      </div>
+      <div class="row-actions">
+        ${isToday ? `<button class="primary" onclick="quickMarkEaten('${meal}')">&#10003; Mark eaten</button>` : ''}
+        <button onclick="openEditor('${day}','${meal}')">Edit</button>
+        <button onclick="openSwapModal('${day}','${meal}')">Swap</button>
+        <button class="danger" onclick="removeMeal('${day}','${meal}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function quickMarkEaten(meal){
+  markEaten(todayKey(), meal, weekdayLabelFromDate(new Date()));
+  renderPlanDashboard();
+}
+
+/* ===================== EMPTY-SLOT CHOOSER ===================== */
+function openChooser(day, meal){
+  chooserContext = {day, meal};
+  document.getElementById('chooser-title').textContent = `How would you like to plan ${meal.toLowerCase()} — ${day}?`;
+  openModal('chooser-overlay');
+}
+function chooserPick(mode){
+  const {day, meal} = chooserContext;
+  closeModal('chooser-overlay');
+  if(mode === 'recipe') openPicker(day, meal);
+  else if(mode === 'pantry') openPicker(day, meal, {sortByPantry:true});
+  else if(mode === 'gap') openGapPicker(day, meal);
+}
+function openGapPicker(day, meal){
+  // Reuses the assistant scoring, but scoped to a single empty slot chosen via the chooser.
+  editingKey = key(day, meal);
+  document.getElementById('picker-title').textContent = `Best fits for ${meal.toLowerCase()}'s remaining targets — ${day}`;
+  document.getElementById('picker-cuisine').innerHTML = '<option value="All">All cuisines</option>' + getCuisines().map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('picker-search').value = '';
+  window._pickerMeal = meal;
+  window._pickerDay = day;
+  window._pickerGapMode = true;
+  renderPickerList();
+  openModal('picker-overlay');
+}
+
+/* ===================== PLAN GRID (full week) ===================== */
+function renderPlanTable(){
+  const table = document.getElementById('plan-table');
+  let html = '<thead><tr><th></th>';
+  DAYS.forEach((d,i) => {
+    const prev = i === 0 ? DAYS[DAYS.length-1] : DAYS[i-1];
+    html += `<th class="day-head"><span class="day-name">${d}</span><button class="repeat-btn" title="Repeat ${prev}'s plan into ${d}" onclick="repeatPreviousDay('${d}')">&#8635; repeat ${prev}</button></th>`;
+  });
+  html += '</tr></thead><tbody>';
+  MEAL_TYPES.forEach(meal => {
+    html += `<tr><td class="meal-label">${meal}</td>`;
+    DAYS.forEach(day => {
+      const slot = state.plan[key(day, meal)];
+      html += '<td class="cell">';
+      if(slot){
+        const totals = calcMealNutrients(slot);
+        html += `<div class="slot-filled">
+          <div class="slot-actions">
+            <button class="icon-btn" title="Edit" onclick="openEditor('${day}','${meal}')">&#9998;</button>
+            <button class="icon-btn remove" title="Remove" onclick="removeMeal('${day}','${meal}')">&times;</button>
+          </div>
+          <div class="name">${slot.recipeName}</div>
+          <div class="kcal">${Math.round(totals.kcal)} kcal</div>
+        </div>`;
+      } else {
+        html += `<button class="slot-empty" onclick="openChooser('${day}','${meal}')">+ Add</button>`;
+      }
+      html += '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+  renderCopyDayControls();
+}
+function renderCopyDayControls(){
+  const from = document.getElementById('copy-from-day');
+  const to = document.getElementById('copy-to-day');
+  if(from.options.length === 0){
+    from.innerHTML = DAYS.map(d => `<option value="${d}">${d}</option>`).join('');
+    to.innerHTML = DAYS.map((d,i) => `<option value="${d}" ${i===1?'selected':''}>${d}</option>`).join('');
+  }
+}
+function copyDayPlan(){
+  const from = document.getElementById('copy-from-day').value;
+  const to = document.getElementById('copy-to-day').value;
+  if(from === to) return;
+  const hasExisting = MEAL_TYPES.some(m => state.plan[key(to,m)]);
+  if(hasExisting && !confirm(`This will overwrite ${to}'s current plan with ${from}'s meals. Continue?`)) return;
+  MEAL_TYPES.forEach(m => {
+    const src = state.plan[key(from,m)];
+    if(src) state.plan[key(to,m)] = JSON.parse(JSON.stringify(src));
+    else delete state.plan[key(to,m)];
+  });
+  savePlan();
+  renderPlanDashboard();
+}
+function repeatPreviousDay(day){
+  const idx = DAYS.indexOf(day);
+  const prevDay = idx === 0 ? DAYS[DAYS.length-1] : DAYS[idx-1];
+  const prevHasAnything = MEAL_TYPES.some(m => state.plan[key(prevDay,m)]);
+  if(!prevHasAnything){ alert(`${prevDay} doesn't have any meals planned yet.`); return; }
+  const hasExisting = MEAL_TYPES.some(m => state.plan[key(day,m)]);
+  if(hasExisting && !confirm(`This will overwrite ${day}'s current plan with ${prevDay}'s meals. Continue?`)) return;
+  MEAL_TYPES.forEach(m => {
+    const src = state.plan[key(prevDay,m)];
+    if(src) state.plan[key(day,m)] = JSON.parse(JSON.stringify(src));
+    else delete state.plan[key(day,m)];
+  });
+  savePlan();
+  renderPlanDashboard();
+}
+
+/* ===================== PICKER MODAL (add to plan) ===================== */
+function openPicker(day, meal, opts){
+  opts = opts || {};
+  editingKey = key(day, meal);
+  document.getElementById('picker-title').textContent = `Add a ${meal.toLowerCase()} — ${day}`;
+  document.getElementById('picker-cuisine').innerHTML = '<option value="All">All cuisines</option>' + getCuisines().map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('picker-search').value = '';
+  window._pickerMeal = meal;
+  window._pickerDay = day;
+  window._pickerSortPantry = !!opts.sortByPantry;
+  window._pickerGapMode = false;
+  renderPickerList();
+  openModal('picker-overlay');
+}
+function renderPickerList(){
+  const meal = window._pickerMeal;
+  const search = document.getElementById('picker-search').value.toLowerCase();
+  const cuisine = document.getElementById('picker-cuisine').value;
+  let options = recipeDB.filter(r => r.mealTypes.includes(meal) && recipePassesFilters(r));
+  if(cuisine !== 'All') options = options.filter(r => r.cuisine === cuisine);
+  if(search) options = options.filter(r => r.name.toLowerCase().includes(search));
+
+  if(recipeDB.length === 0){
+    document.getElementById('picker-count').textContent = '';
+    document.getElementById('picker-list').innerHTML = `<div class="empty-note">You haven't created any recipes yet. Close this, go to <strong>Recipes</strong>, and add one.</div>`;
+    return;
+  }
+
+  if(window._pickerGapMode){
+    const day = window._pickerDay;
+    const actual = calcDayNutrients(day);
+    const gaps = {}; ['kcal','protein','carbs','fat','fiber'].forEach(n => gaps[n] = Math.max(0, state.targets[n]-actual[n]));
+    options = options.map(r => {
+      const c = calcNutrition(r.ingredients);
+      const proteinClosure = gaps.protein > 0 ? Math.min(c.protein,gaps.protein)/gaps.protein : 0;
+      const kcalFit = gaps.kcal > 0 ? Math.max(0,1-Math.abs(c.kcal-gaps.kcal)/gaps.kcal) : 0;
+      return {r, score: proteinClosure*0.6 + kcalFit*0.4, c};
+    }).sort((a,b) => b.score-a.score).map(x => x.r);
+  } else if(window._pickerSortPantry){
+    options = options.map(r => ({r, pct: pantryMatchInfo(r).pct})).sort((a,b) => b.pct-a.pct).map(x => x.r);
+  }
+
+  document.getElementById('picker-count').textContent = `${options.length} matching recipes`;
+  document.getElementById('picker-list').innerHTML = options.map(r => {
+    const totals = calcNutrition(r.ingredients);
+    const pm = pantryMatchInfo(r);
+    return `<div class="picker-item">
+      <div>
+        <div class="p-name">${r.name}</div>
+        <div class="p-meta">${r.cuisine ? r.cuisine + ' · ' : ''}${Math.round(totals.kcal)} kcal · ${totals.protein.toFixed(0)}g protein${pm.total>0 ? ' · '+pm.pct+'% pantry match' : ''}</div>
+      </div>
+      <button onclick="assignRecipe('${window._pickerDay}','${meal}','${r.id}')">Add</button>
+    </div>`;
+  }).join('') || '<div class="empty-note">No recipes match — try clearing filters.</div>';
+}
+function assignRecipe(day, meal, recipeId){
+  const recipe = recipeDB.find(r => r.id === recipeId);
+  if(!recipe) return;
+  state.plan[key(day, meal)] = {
+    recipeId: recipe.id, recipeName: recipe.name, cuisine: recipe.cuisine, mealType: meal,
+    ingredients: recipe.ingredients.map(i => ({id:i.id, qty:i.qty})),
+    instructions: recipe.instructions
+  };
+  trackRecentlyUsed(recipe.id);
+  savePlan();
+  closeModal('picker-overlay');
+  closeModal('swap-overlay');
+  closeModal('recipe-modal-overlay');
+  renderPlanDashboard();
+}
+function removeMeal(day, meal){ delete state.plan[key(day, meal)]; savePlan(); renderPlanDashboard(); }
+function trackRecentlyUsed(recipeId){
+  state.recentlyUsed = [recipeId, ...state.recentlyUsed.filter(id => id !== recipeId)].slice(0, 15);
+  saveSettings();
+}
+
+/* ===================== SWAP MEAL ===================== */
+const SWAP_CATEGORIES = [
+  {id:'similar', label:'Similar nutrition'},
+  {id:'protein', label:'Higher protein'},
+  {id:'lowcal', label:'Lower calorie'},
+  {id:'pantry', label:'Uses ingredients I have'},
+  {id:'quick', label:'Quick meals'},
+  {id:'veg', label:'Vegetarian'},
+  {id:'other', label:'Other'}
+];
+function openSwapModal(day, meal){
+  swapContext = {day, meal};
+  const slot = state.plan[key(day, meal)];
+  document.getElementById('swap-title').textContent = `Swap "${slot.recipeName}" — ${meal}, ${day}`;
+  document.getElementById('swap-categories').innerHTML = SWAP_CATEGORIES.map((c,i) => `<button class="swap-cat-chip ${i===0?'active':''}" data-cat="${c.id}" onclick="renderSwapList('${c.id}')">${c.label}</button>`).join('');
+  renderSwapList('similar');
+  openModal('swap-overlay');
+}
+function renderSwapList(catId){
+  document.querySelectorAll('.swap-cat-chip').forEach(b => b.classList.toggle('active', b.dataset.cat === catId));
+  const {day, meal} = swapContext;
+  const current = state.plan[key(day, meal)];
+  const currentTotals = calcMealNutrients(current);
+  let candidates = recipeDB.filter(r => r.mealTypes.includes(meal) && recipePassesFilters(r) && r.id !== current.recipeId);
+
+  let scored;
+  if(catId === 'similar'){
+    scored = candidates.map(r => { const c = calcNutrition(r.ingredients); return {r,c,score: -(Math.abs(c.kcal-currentTotals.kcal) + Math.abs(c.protein-currentTotals.protein)*5)}; });
+  } else if(catId === 'protein'){
+    scored = candidates.map(r => ({r, c: calcNutrition(r.ingredients)})).filter(x => x.c.protein > currentTotals.protein).map(x => ({...x, score: x.c.protein}));
+  } else if(catId === 'lowcal'){
+    scored = candidates.map(r => ({r, c: calcNutrition(r.ingredients)})).filter(x => x.c.kcal < currentTotals.kcal).map(x => ({...x, score: -x.c.kcal}));
+  } else if(catId === 'pantry'){
+    scored = candidates.map(r => ({r, c: calcNutrition(r.ingredients), score: pantryMatchInfo(r).pct}));
+  } else if(catId === 'quick'){
+    scored = candidates.filter(r => r.prepTime != null).map(r => ({r, c: calcNutrition(r.ingredients), score: -r.prepTime}));
+  } else if(catId === 'veg'){
+    scored = candidates.filter(r => r.vegetarian).map(r => ({r, c: calcNutrition(r.ingredients), score: 0}));
+  } else {
+    scored = candidates.map(r => ({r, c: calcNutrition(r.ingredients), score: 0}));
+  }
+  scored.sort((a,b) => b.score - a.score);
+
+  document.getElementById('swap-list').innerHTML = scored.map(({r,c}) => {
+    const pm = pantryMatchInfo(r);
+    return `<div class="picker-item">
+      <div>
+        <div class="p-name">${r.name}</div>
+        <div class="p-meta">${Math.round(c.kcal)} kcal · ${c.protein.toFixed(0)}g protein${r.prepTime!=null ? ' · '+r.prepTime+' min':''}${pm.total>0?' · '+pm.pct+'% pantry match':''}</div>
+      </div>
+      <button onclick="performMealSwap('${r.id}')">Use this</button>
+    </div>`;
+  }).join('') || '<div class="empty-note">No recipes match this category yet.</div>';
+}
+function performMealSwap(newRecipeId){
+  const {day, meal} = swapContext;
+  const recipe = recipeDB.find(r => r.id === newRecipeId);
+  if(!recipe) return;
+  // Replaces this meal instance only — master recipes are never modified by a swap.
+  state.plan[key(day, meal)] = {
+    recipeId: recipe.id, recipeName: recipe.name, cuisine: recipe.cuisine, mealType: meal,
+    ingredients: recipe.ingredients.map(i => ({id:i.id, qty:i.qty})),
+    instructions: recipe.instructions
+  };
+  trackRecentlyUsed(recipe.id);
+  savePlan();
+  closeModal('swap-overlay');
+  renderPlanDashboard();
+}
+
+/* ===================== MEAL INSTANCE EDITOR (stepper UI) ===================== */
+function openEditor(day, meal){
+  editingKey = key(day, meal);
+  const slot = state.plan[editingKey];
+  document.getElementById('editor-title').textContent = `${slot.recipeName} — ${meal}, ${day}`;
+  renderEditorList();
+  document.getElementById('editor-instructions').textContent = slot.instructions || 'No instructions were added for this recipe.';
+  document.getElementById('swap-note-area').innerHTML = '';
+  openModal('editor-overlay');
+}
+function addIngredientRowToEditorContext(id, qty){
+  if(typeof editingKey === 'string' && editingKey.startsWith('__tracker__')){
+    const existing = window._trackerEditBuffer.find(r => r.id === id);
+    if(existing) existing.qty += qty; else window._trackerEditBuffer.push({id, qty});
+    renderTrackerEditorList();
+  } else {
+    const slot = state.plan[editingKey];
+    const existing = slot.ingredients.find(r => r.id === id);
+    if(existing) existing.qty += qty; else slot.ingredients.push({id, qty});
+    savePlan();
+    renderEditorList();
+    renderPlanDashboard();
+  }
+}
+function stepAmount(unit, qty){ return unit === 'piece' ? 1 : (qty >= 50 ? 10 : 5); }
+function renderEditorList(){
+  const slot = state.plan[editingKey];
+  const wrap = document.getElementById('editor-ing-list');
+  wrap.innerHTML = slot.ingredients.length === 0 ? '<div class="empty-note">No ingredients left — add one below.</div>' :
+    slot.ingredients.map((row, idx) => {
+      const ing = ingredientDB[row.id];
+      const step = stepAmount(ing.unit, row.qty);
+      return `<div class="stepper-row">
+        <div class="sr-name">${ing.canonicalName}</div>
+        <div class="stepper">
+          <button onclick="bumpIngredientQty(${idx}, ${-step})">&minus;</button>
+          <input type="number" min="0" value="${row.qty}" onchange="updateIngredientQty(${idx}, this.value)">
+          <span class="unit">${ing.unit==='piece'?'pc':'g'}</span>
+          <button onclick="bumpIngredientQty(${idx}, ${step})">+</button>
+        </div>
+        <button class="icon-btn remove" title="Remove" onclick="removeIngredient(${idx})">&times;</button>
+      </div>`;
+    }).join('');
+  renderEditorNutrition();
+  renderSwapSection();
+}
+function bumpIngredientQty(idx, delta){
+  const slot = state.plan[editingKey];
+  slot.ingredients[idx].qty = Math.max(0, slot.ingredients[idx].qty + delta);
+  savePlan();
+  renderEditorList();
+  renderPlanDashboard();
+}
+function updateIngredientQty(idx, val){
+  const slot = state.plan[editingKey];
+  slot.ingredients[idx].qty = Math.max(0, parseFloat(val) || 0);
+  savePlan();
+  renderEditorNutrition();
+  renderPlanDashboard();
+}
+function removeIngredient(idx){
+  const slot = state.plan[editingKey];
+  slot.ingredients.splice(idx, 1);
+  savePlan();
+  renderEditorList();
+  renderPlanDashboard();
+}
+function renderNutritionBlock(totals, kcalElId, macroElId, gridElId){
+  document.getElementById(kcalElId).textContent = Math.round(totals.kcal) + ' kcal';
+  document.getElementById(macroElId).innerHTML = `<strong>${totals.protein.toFixed(1)}g</strong> protein · <strong>${totals.carbs.toFixed(1)}g</strong> carbs · <strong>${totals.fat.toFixed(1)}g</strong> fat · <strong>${totals.fiber.toFixed(1)}g</strong> fiber`;
+  document.getElementById(gridElId).innerHTML = MICROS.map(n => `<div>${NUTRIENT_LABEL[n]}: <strong>${totals[n] < 10 ? totals[n].toFixed(1) : Math.round(totals[n])}${NUTRIENT_UNIT[n]}</strong></div>`).join('');
+}
+function renderEditorNutrition(){ renderNutritionBlock(calcMealNutrients(state.plan[editingKey]), 'editor-kcal', 'editor-macros', 'editor-micros'); }
+
+function renderSwapSection(){
+  const slot = state.plan[editingKey];
+  const proteinRows = slot.ingredients.map((r,idx) => ({idx, row:r, ing:ingredientDB[r.id]})).filter(x => x.ing.proteinSource);
+  const wrap = document.getElementById('swap-section');
+  if(proteinRows.length === 0){ wrap.innerHTML = ''; return; }
+  const candidates = Object.values(ingredientDB).filter(i => i.proteinSource && ingredientPassesDiet(i));
+  wrap.innerHTML = `<div class="section-label">Swap protein</div>
+    <div class="swap-row">
+      <select id="swap-from-select">${proteinRows.map(x => `<option value="${x.idx}">${x.ing.canonicalName} (${x.row.qty}${x.ing.unit==='piece'?' pc':'g'})</option>`).join('')}</select>
+      <select id="swap-to-select">${candidates.map(c => `<option value="${c.id}">${c.canonicalName}</option>`).join('')}</select>
+      <button onclick="performProteinSwap()">Swap</button>
+    </div>`;
+}
+function performProteinSwap(){
+  const slot = state.plan[editingKey];
+  const fromIdx = parseInt(document.getElementById('swap-from-select').value);
+  const toId = document.getElementById('swap-to-select').value;
+  const oldRow = slot.ingredients[fromIdx];
+  const oldIng = ingredientDB[oldRow.id];
+  const newIng = ingredientDB[toId];
+  const originalProteinGrams = oldRow.qty * (oldIng.nutrientsPerGram.protein || 0);
+  let newQty = newIng.nutrientsPerGram.protein > 0 ? originalProteinGrams / newIng.nutrientsPerGram.protein : oldRow.qty;
+  newQty = newIng.unit === 'piece' ? Math.max(1, Math.round(newQty)) : (newQty >= 15 ? Math.round(newQty/5)*5 : Math.round(newQty*10)/10);
+  const before = {name: oldIng.canonicalName, qty: oldRow.qty, unit: oldIng.unit, protein: originalProteinGrams};
+  slot.ingredients[fromIdx] = {id: toId, qty: newQty};
+  savePlan();
+  renderEditorList();
+  renderPlanDashboard();
+  const newProtein = newQty * (newIng.nutrientsPerGram.protein || 0);
+  document.getElementById('swap-note-area').innerHTML = `<div class="swap-note">Replaced ${before.qty}${before.unit==='piece'?' pc':'g'} ${before.name} (${before.protein.toFixed(1)}g protein) with ${newQty}${newIng.unit==='piece'?' pc':'g'} ${newIng.canonicalName} (${newProtein.toFixed(1)}g protein).</div>`;
+}
+
+/* ===================== UNIFIED INGREDIENT PICKER (search DB → web search → manual create) ===================== */
+function escapeHtml(str){
+  return String(str==null?'':str).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function isValidHttpUrl(u){
+  if(!u) return false;
+  try { const x = new URL(u); return x.protocol === 'http:' || x.protocol === 'https:'; } catch(e){ return false; }
+}
+function sourceTypeLabel(t){
+  return {authoritative:'Authoritative source', reputable:'Reputable source', user_entered:'User entered', equivalent:'Estimated using equivalent ingredient'}[t] || (t||'');
+}
+
+let ingredientPickerCallback = null;
+let ingpickerQuery = '';
+let ingpickerPendingId = null;
+
+function openIngredientPicker(onAdd){
+  ingredientPickerCallback = onAdd;
+  ingpickerQuery = '';
+  ingpickerPendingId = null;
+  renderIngPickerSearch();
+  openModal('ingpicker-overlay');
+}
+function closeIngredientPicker(){ closeModal('ingpicker-overlay'); ingredientPickerCallback = null; }
+
+function searchIngredientDB(q){
+  q = q.trim().toLowerCase();
+  if(!q) return [];
+  return Object.values(ingredientDB).filter(ing => {
+    if(ing.canonicalName.toLowerCase().includes(q)) return true;
+    return (ing.aliases||[]).some(a => a.toLowerCase().includes(q));
+  }).sort((a,b) => a.canonicalName.localeCompare(b.canonicalName)).slice(0,25);
+}
+function findDuplicateIngredient(name, aliases){
+  const norm = s => String(s).trim().toLowerCase();
+  const names = [norm(name), ...(aliases||[]).map(norm)].filter(Boolean);
+  return Object.values(ingredientDB).find(ing => {
+    const existingNames = [norm(ing.canonicalName), ...(ing.aliases||[]).map(norm)];
+    return existingNames.some(n => names.includes(n));
+  }) || null;
+}
+
+function renderIngPickerSearch(){
+  const body = document.getElementById('ingpicker-body');
+  body.innerHTML = `
+    <input type="text" class="search-input" style="width:100%;margin-bottom:12px;" id="ingpicker-search-input" placeholder="Search ingredients…" value="${escapeHtml(ingpickerQuery)}">
+    <div id="ingpicker-results"></div>
+  `;
+  const input = document.getElementById('ingpicker-search-input');
+  input.addEventListener('input', e => { ingpickerQuery = e.target.value; renderIngPickerResults(); });
+  setTimeout(() => input.focus(), 0);
+  renderIngPickerResults();
+}
+function renderIngPickerResults(){
+  const wrap = document.getElementById('ingpicker-results');
+  const q = ingpickerQuery.trim();
+  if(!q){ wrap.innerHTML = '<div class="empty-note">Start typing to search your ingredient database.</div>'; return; }
+  const results = searchIngredientDB(q);
+  let html = results.map(ing => `
+    <div class="picker-item">
+      <div>
+        <div class="p-name">${escapeHtml(ing.canonicalName)}</div>
+        <div class="p-meta">${escapeHtml(ing.category||'')}${ing.sourceType ? ' · '+escapeHtml(sourceTypeLabel(ing.sourceType)) : ''}</div>
+      </div>
+      <button onclick="chooseIngredientForQty('${ing.id}')">Select</button>
+    </div>`).join('');
+  html += `<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:14px;">
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 10px;">${results.length===0 ? `No ingredient found for "${escapeHtml(q)}".` : `Can't find what you're looking for?`}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-sm" onclick="startWebSearch()">&#127760; Search the web for "${escapeHtml(q)}"</button>
+        <button class="btn-sm secondary" onclick="startManualCreate()">+ Create ingredient manually</button>
+      </div>
+    </div>`;
+  wrap.innerHTML = html;
+}
+function chooseIngredientForQty(id){
+  ingpickerPendingId = id;
+  const ing = ingredientDB[id];
+  document.getElementById('ingpicker-body').innerHTML = `
+    <div class="section-label">${escapeHtml(ing.canonicalName)}${ing.sourceType && ing.sourceType!=='authoritative' ? ' — '+escapeHtml(sourceTypeLabel(ing.sourceType)) : ''}</div>
+    <div class="add-ing-row">
+      <input type="number" min="0" id="ingpicker-qty" placeholder="quantity" style="flex:1;">
+      <span class="ei-unit">${ing.unit==='piece'?'pc':'g'}</span>
+      <button onclick="finalizeIngredientAdd()">Add</button>
+    </div>
+    <button class="btn-sm secondary" style="margin-top:10px;" onclick="renderIngPickerSearch()">&larr; Back to search</button>
+  `;
+  setTimeout(() => { const el = document.getElementById('ingpicker-qty'); if(el){ el.focus(); el.addEventListener('keydown', e => { if(e.key==='Enter') finalizeIngredientAdd(); }); } }, 0);
+}
+function finalizeIngredientAdd(){
+  const qty = Math.max(0, parseFloat(document.getElementById('ingpicker-qty').value)||0);
+  if(qty <= 0) return;
+  const cb = ingredientPickerCallback;
+  const id = ingpickerPendingId;
+  closeIngredientPicker();
+  if(cb) cb(id, qty);
+}
+function showDuplicateNotice(dup, triedName){
+  document.getElementById('ingpicker-body').innerHTML = `
+    <p style="font-size:13.5px;">"${escapeHtml(triedName)}" already exists in your ingredient database as <strong>${escapeHtml(dup.canonicalName)}</strong>.</p>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-sm" onclick="chooseIngredientForQty('${dup.id}')">Use existing ingredient</button>
+      <button class="btn-sm secondary" onclick="renderIngPickerSearch()">&larr; Back to search</button>
+    </div>`;
+}
+
+/* ---- Build + register a new ingredient (shared by web-search and manual paths) ---- */
+function buildIngredientEntry(opts){
+  const id = 'cust_' + String(opts.canonicalName).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40) + '_' + Date.now().toString(36).slice(-4);
+  const per100 = {};
+  NUT_KEYS.forEach(k => { const v = opts.per100g ? opts.per100g[k] : null; per100[k] = (typeof v === 'number' && !isNaN(v)) ? v : 0; });
+  let perGram = {};
+  if(opts.unit === 'piece'){
+    const g = opts.gramsPerPiece || 100;
+    NUT_KEYS.forEach(k => perGram[k] = per100[k] * (g/100));
+  } else {
+    NUT_KEYS.forEach(k => perGram[k] = per100[k] / 100);
+  }
+  const allergens = opts.allergens || [];
+  const isMeatOrFish = allergens.includes('fish') || allergens.includes('shellfish') || /\b(chicken|beef|pork|turkey|lamb|mutton|fish|shrimp|prawn|goat|duck)\b/i.test(opts.canonicalName);
+  const containsDairyOrEgg = allergens.includes('dairy') || allergens.includes('egg');
+  return {
+    id, canonicalName: opts.canonicalName, aliases: (opts.aliases||[]).slice(0,4),
+    category: opts.category || 'produce', unit: opts.unit || 'g',
+    allergens, allergensVerified: !!opts.allergensVerified,
+    proteinSource: per100.protein >= 10,
+    nutrientsPerGram: perGram, nutrientsPer100g: per100,
+    isMeatOrFish, containsDairyOrEgg,
+    source: opts.source || 'User entered', sourceUrl: opts.sourceUrl || '', sourceType: opts.sourceType || 'user_entered',
+    rawCookedState: opts.state || '', dateAdded: Date.now()
+  };
+}
+function addNewIngredient(entry){
+  ingredientDB[entry.id] = entry;
+  state.customIngredients[entry.id] = entry;
+  saveCustomIngredients();
+}
+
+/* ---- Web search (via the Claude-in-artifact API with the web_search tool) ---- */
+function extractJsonFromText(text){
+  let cleaned = String(text).replace(/```json/gi,'').replace(/```/g,'').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if(start === -1 || end === -1) throw new Error('No JSON object found in response');
+  return JSON.parse(cleaned.slice(start, end+1));
+}
+async function fetchIngredientFromWeb(query){
+  const systemPrompt = 'You are a strict nutrition-database lookup tool for a meal-planning app. You must search the web and return ONLY verified, sourced nutrition data. Never invent, estimate, or guess numbers. Respond with raw JSON only — no markdown fences, no commentary.';
+  const userPrompt = `Search the web for reliable nutrition information about this food: "${query}".
+
+Priority of sources, in order: (1) USDA FoodData Central, (2) Indian government / official food-composition databases, (3) other government nutrition databases, (4) university/research nutrition databases, (5) other established, reputable food-composition databases. Avoid blogs, recipe sites, and pages without a clear data source.
+
+If this food has meaningfully different common forms (for example raw vs cooked), return up to 3 candidates covering the most relevant forms, each clearly labeled with its state.
+
+Return ONLY a JSON object with exactly this shape:
+{
+  "found": boolean,
+  "candidates": [
+    {
+      "canonicalName": string,
+      "state": string,
+      "basis": "per 100g",
+      "kcal": number|null, "protein": number|null, "carbs": number|null, "fat": number|null,
+      "fiber": number|null, "sugar": number|null, "sodium": number|null, "calcium": number|null,
+      "iron": number|null, "potassium": number|null, "magnesium": number|null, "zinc": number|null,
+      "vitA": number|null, "vitC": number|null, "vitD": number|null, "vitE": number|null, "vitK": number|null,
+      "source": string, "sourceUrl": string, "sourceType": "authoritative" or "reputable",
+      "allergens": string array, "allergensVerified": boolean,
+      "aliases": string array
+    }
+  ],
+  "note": string
+}
+
+Rules:
+- Only include a candidate if you have real per-100g values from a source you actually found via search. Never fabricate numbers.
+- If a nutrient genuinely isn't reported by the source, use null for that field rather than guessing.
+- allergens should only list an allergen if the source clearly supports it; otherwise leave it out and set allergensVerified to false.
+- aliases: at most 3, only clearly correct alternate names.
+- If nothing reliable is found, return {"found": false, "candidates": [], "note": "brief reason"}.
+- Do not wrap the JSON in markdown code fences. Return raw JSON only, nothing else.`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }]
+    })
+  });
+  if(!response.ok) throw new Error('API error ' + response.status);
+  const data = await response.json();
+  const text = (data.content||[]).filter(b => b.type === 'text').map(b => b.text).join('\n');
+  if(!text.trim()) throw new Error('Empty response');
+  return extractJsonFromText(text);
+}
+async function startWebSearch(){
+  const q = ingpickerQuery.trim();
+  if(!q) return;
+  const body = document.getElementById('ingpicker-body');
+  body.innerHTML = `<div class="empty-note">Searching nutrition databases for "${escapeHtml(q)}"…</div>`;
+  try {
+    const result = await fetchIngredientFromWeb(q);
+    if(!result || !result.found || !Array.isArray(result.candidates) || result.candidates.length === 0){
+      body.innerHTML = `
+        <p style="font-size:13.5px;">Exact nutrition data wasn't found for "${escapeHtml(q)}".${result && result.note ? ' '+escapeHtml(result.note) : ''}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-sm secondary" onclick="startManualCreate()">+ Create ingredient manually</button>
+          <button class="btn-sm secondary" onclick="renderIngPickerSearch()">&larr; Back to search</button>
+        </div>`;
+      return;
+    }
+    renderWebResultCandidates(result.candidates);
+  } catch(err){
+    console.error(err);
+    body.innerHTML = `
+      <p style="font-size:13.5px;color:var(--rust);">Web ingredient search requires an internet connection, and only works while this is open as a live Claude.ai artifact. If you've downloaded this file, use "Create ingredient manually" instead.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-sm secondary" onclick="startManualCreate()">+ Create ingredient manually</button>
+        <button class="btn-sm secondary" onclick="renderIngPickerSearch()">&larr; Back to search</button>
+      </div>`;
+  }
+}
+function renderWebResultCandidates(candidates){
+  window._webCandidates = candidates;
+  const body = document.getElementById('ingpicker-body');
+  body.innerHTML = candidates.map((c, idx) => {
+    const complete = [c.kcal,c.protein,c.carbs,c.fat].every(v => typeof v === 'number' && !isNaN(v));
+    const allergenLine = c.allergensVerified
+      ? 'Allergens: ' + ((c.allergens&&c.allergens.length) ? escapeHtml(c.allergens.join(', ')) : 'none reported')
+      : 'Allergen information not verified';
+    return `<div class="picker-item" style="display:block;">
+      <div class="p-name">${escapeHtml(c.canonicalName)}${c.state?' — '+escapeHtml(c.state):''}</div>
+      <div class="p-meta" style="margin-bottom:6px;">Source: ${escapeHtml(c.source||'Unknown')}</div>
+      ${complete ? `<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;">Per 100g: ${c.kcal} kcal · ${c.protein}g protein · ${c.carbs}g carbs · ${c.fat}g fat${c.fiber!=null?' · '+c.fiber+'g fiber':''}</div>`
+                : `<div style="font-size:12.5px;color:var(--rust);margin-bottom:8px;">Incomplete nutrition data — some core values are missing, so this can't be added yet.</div>`}
+      <div style="font-size:11.5px;color:${c.allergensVerified?'var(--herb-dark)':'var(--mustard)'};margin-bottom:8px;">${allergenLine}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${isValidHttpUrl(c.sourceUrl) ? `<a href="${escapeHtml(c.sourceUrl)}" target="_blank" rel="noopener" class="btn-sm secondary">View source</a>` : ''}
+        ${complete ? `<button class="btn-sm" onclick="confirmWebCandidate(${idx})">Add to Larder</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') + `<button class="btn-sm secondary" style="margin-top:10px;" onclick="renderIngPickerSearch()">&larr; Back to search</button>`;
+}
+function confirmWebCandidate(idx){
+  const c = window._webCandidates[idx];
+  const dup = findDuplicateIngredient(c.canonicalName, c.aliases||[]);
+  if(dup){ showDuplicateNotice(dup, c.canonicalName); return; }
+  const entry = buildIngredientEntry({
+    canonicalName: c.canonicalName, aliases: c.aliases||[], category: 'produce', unit: 'g',
+    per100g: c, allergens: c.allergens||[], allergensVerified: !!c.allergensVerified,
+    source: c.source || 'Web search', sourceUrl: c.sourceUrl || '', sourceType: c.sourceType || 'reputable',
+    state: c.state || ''
+  });
+  addNewIngredient(entry);
+  chooseIngredientForQty(entry.id);
+}
+
+/* ---- Manual ingredient creation (always available, no network needed) ---- */
+function startManualCreate(){
+  const body = document.getElementById('ingpicker-body');
+  const categories = ['produce','protein','dairy','grain','legume','fruit','pantry','spice','sauce','seed_nut','powder'];
+  body.innerHTML = `
+    <div class="form-row"><label>Name</label><input type="text" id="manual-name" value="${escapeHtml(ingpickerQuery)}"></div>
+    <div class="form-row-inline">
+      <div class="form-row"><label>Form / state</label><select id="manual-state">${INGREDIENT_STATE_OPTIONS.map(s=>`<option value="${s}">${s}</option>`).join('')}<option value="">Other / unspecified</option></select></div>
+      <div class="form-row"><label>Category</label><select id="manual-category">${categories.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-row"><label><input type="checkbox" id="manual-is-piece"> Measured by piece, not grams</label></div>
+    <div class="form-row" id="manual-piece-grams-row" style="display:none;"><label>Grams per piece</label><input type="number" id="manual-piece-grams" min="0" placeholder="e.g. 50"></div>
+    <div class="section-label">Nutrition per 100g</div>
+    <div class="np-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));">
+      ${NUT_KEYS.map(n => `<div><label style="font-size:11px;color:var(--ink-soft);display:block;">${NUTRIENT_LABEL[n]} (${NUTRIENT_UNIT[n]})</label><input type="number" step="any" min="0" id="manual-${n}" style="width:100%;border:1px solid var(--line);border-radius:2px;padding:4px 6px;font-size:12.5px;"></div>`).join('')}
+    </div>
+    <div class="section-label">Allergens (only check what you're sure of)</div>
+    <div class="mealtype-check-row">${Object.keys(ALLERGEN_FULL_LABELS).map(a=>`<label><input type="checkbox" class="manual-allergen" value="${a}"> ${ALLERGEN_FULL_LABELS[a]}</label>`).join('')}</div>
+    <div class="form-error" id="manual-error"></div>
+    <div class="modal-footer">
+      <button class="btn-sm secondary" onclick="renderIngPickerSearch()">&larr; Back to search</button>
+      <button class="btn-primary" onclick="saveManualIngredient()">Add to Larder</button>
+    </div>
+  `;
+  document.getElementById('manual-is-piece').addEventListener('change', e => {
+    document.getElementById('manual-piece-grams-row').style.display = e.target.checked ? 'block' : 'none';
+  });
+}
+function saveManualIngredient(){
+  const name = document.getElementById('manual-name').value.trim();
+  if(!name){ document.getElementById('manual-error').textContent = 'Enter a name.'; return; }
+  const dup = findDuplicateIngredient(name, []);
+  if(dup){ showDuplicateNotice(dup, name); return; }
+  const per100 = {};
+  NUT_KEYS.forEach(n => { per100[n] = Math.max(0, parseFloat(document.getElementById('manual-'+n).value) || 0); });
+  const isPiece = document.getElementById('manual-is-piece').checked;
+  const gramsPerPiece = isPiece ? Math.max(1, parseFloat(document.getElementById('manual-piece-grams').value)||100) : null;
+  const allergens = [...document.querySelectorAll('.manual-allergen:checked')].map(el => el.value);
+  const entry = buildIngredientEntry({
+    canonicalName: name, aliases: [], category: document.getElementById('manual-category').value,
+    unit: isPiece ? 'piece' : 'g', per100g: per100, allergens, allergensVerified: allergens.length > 0,
+    source: 'User entered', sourceUrl: '', sourceType: 'user_entered',
+    state: document.getElementById('manual-state').value, gramsPerPiece
+  });
+  addNewIngredient(entry);
+  chooseIngredientForQty(entry.id);
+}
+
+/* ===================== MODAL HELPERS ===================== */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(ov => ov.addEventListener('click', e => { if(e.target === ov) closeModal(ov.id); }));
+
+/* ===================== RECIPES LIBRARY ===================== */
+function initLibraryControls(){
+  document.getElementById('lib-search').addEventListener('input', e => { state.libSearch = e.target.value.toLowerCase(); renderLibrary(); });
+  document.getElementById('cuisine-filter').addEventListener('change', e => { state.libCuisine = e.target.value; renderLibrary(); });
+
+  const colWrap = document.getElementById('collection-chips');
+  const collections = [['all','All recipes'],['favorites','Favorites'],['recent','Recently used']];
+  colWrap.innerHTML = collections.map(([id,label]) => `<button class="chip ${id==='all'?'active':''}" data-col="${id}">${label}</button>`).join('');
+  colWrap.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+    colWrap.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.libCollection = btn.dataset.col;
+    renderLibrary();
+  }));
+
+  const mtWrap = document.getElementById('mealtype-chips');
+  mtWrap.innerHTML = '<span class="row-label">Meal:</span>' + ['All', ...MEAL_TYPES].map(m => `<button class="chip ${m==='All'?'active':''}" data-mt="${m}">${m}</button>`).join('');
+  mtWrap.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+    mtWrap.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.libMealType = btn.dataset.mt;
+    renderLibrary();
+  }));
+
+  const alWrap = document.getElementById('allergy-chips');
+  alWrap.innerHTML = '<span class="row-label">Exclude:</span>' +
+    Object.keys(ALLERGEN_LABELS).map(a => `<button class="chip allergy" data-allergen="${a}">${ALLERGEN_LABELS[a]}</button>`).join('') +
+    `<button class="chip" id="veg-toggle">Vegetarian only</button><button class="chip" id="vegan-toggle">Vegan only</button>`;
+  alWrap.querySelectorAll('[data-allergen]').forEach(btn => btn.addEventListener('click', () => {
+    const a = btn.dataset.allergen;
+    if(state.allergyExclude.has(a)){ state.allergyExclude.delete(a); btn.classList.remove('active'); }
+    else { state.allergyExclude.add(a); btn.classList.add('active'); }
+    saveSettings(); renderLibrary();
+  }));
+  document.getElementById('veg-toggle').addEventListener('click', function(){ state.vegetarianOnly = !state.vegetarianOnly; this.classList.toggle('active'); saveSettings(); renderLibrary(); });
+  document.getElementById('vegan-toggle').addEventListener('click', function(){ state.veganOnly = !state.veganOnly; this.classList.toggle('active'); saveSettings(); renderLibrary(); });
+  document.getElementById('pantry-match-toggle').addEventListener('click', function(){ state.pantryMatchMode = !state.pantryMatchMode; this.classList.toggle('active'); renderLibrary(); });
+}
+function refreshCuisineFilterOptions(){
+  const sel = document.getElementById('cuisine-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="All">All cuisines</option>' + getCuisines().map(c => `<option value="${c}">${c}</option>`).join('');
+  if([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+function getFilteredLibrary(){
+  let list = recipeDB.filter(r => recipePassesFilters(r));
+  if(state.libCollection === 'favorites') list = list.filter(r => state.favorites.has(r.id));
+  if(state.libCollection === 'recent') list = state.recentlyUsed.map(id => list.find(r => r.id === id)).filter(Boolean);
+  if(state.libMealType !== 'All') list = list.filter(r => r.mealTypes.includes(state.libMealType));
+  if(state.libCuisine !== 'All') list = list.filter(r => r.cuisine === state.libCuisine);
+  if(state.libSearch) list = list.filter(r => r.name.toLowerCase().includes(state.libSearch));
+  if(state.pantryMatchMode){
+    list = list.map(r => ({r, pm: pantryMatchInfo(r)})).filter(x => x.pm.have > 0)
+      .sort((a,b) => b.pm.pct - a.pm.pct).map(x => ({...x.r, _pm: x.pm}));
+  }
+  return list;
+}
+function renderLibrary(){
+  refreshCuisineFilterOptions();
+  const filtered = getFilteredLibrary();
+  document.getElementById('lib-count').textContent = recipeDB.length === 0 ? '' : `Showing ${filtered.length} of ${recipeDB.length} recipes`;
+  const area = document.getElementById('recipe-area');
+  if(recipeDB.length === 0){
+    area.innerHTML = `<div class="empty-hero"><h3>No recipes yet</h3><p>Create your first recipe — pick ingredients and quantities for one serving, and Larder calculates the nutrition for you.</p><button class="btn-primary" onclick="openRecipeModal(null)">+ New recipe</button></div>`;
+    return;
+  }
+  const cards = filtered.map(r => {
+    const totals = calcNutrition(r.ingredients);
+    const pm = r._pm || pantryMatchInfo(r);
+    const isFav = state.favorites.has(r.id);
+    return `<div class="recipe-card">
+      <button class="fav-btn ${isFav?'active':''}" onclick="toggleFavorite('${r.id}')" title="Favorite">${isFav ? '★' : '☆'}</button>
+      <div class="tag-row">${r.cuisine ? `<span class="tag cuisine">${r.cuisine}</span>` : ''}<span class="tag">${r.mealTypes.join(', ')}</span>${r.vegan?'<span class="tag">Vegan</span>':(r.vegetarian?'<span class="tag">Vegetarian</span>':'')}</div>
+      <h3>${r.name}</h3>
+      <div class="meta-line">${r.prepTime!=null ? r.prepTime+' min · ' : ''}${r.ingredients.length} ingredients</div>
+      <div class="macro-row">
+        <span><strong>${Math.round(totals.kcal)}</strong> kcal</span>
+        <span><strong>${totals.protein.toFixed(0)}g</strong> protein</span>
+        <span><strong>${totals.carbs.toFixed(0)}g</strong> carbs</span>
+        <span><strong>${totals.fat.toFixed(0)}g</strong> fat</span>
+      </div>
+      ${pm.total>0 ? `<div class="pantry-pct">${pm.pct}% of ingredients available</div>` : ''}
+      <div class="card-actions">
+        <button class="btn-sm" onclick="openRecipeModal('${r.id}')">Edit</button>
+        <div class="quick-add-row">
+          <select id="qa-day-${r.id}">${DAYS.map(d => `<option value="${d}">${d}</option>`).join('')}</select>
+          <select id="qa-meal-${r.id}">${r.mealTypes.map(m => `<option value="${m}">${m}</option>`).join('')}</select>
+          <button onclick="quickAddCard('${r.id}')">Add</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty-note">No recipes match these filters.</div>';
+  area.innerHTML = `<div class="recipe-grid">${cards}</div>`;
+}
+function toggleFavorite(id){
+  if(state.favorites.has(id)) state.favorites.delete(id); else state.favorites.add(id);
+  saveSettings();
+  renderLibrary();
+}
+function quickAddCard(recipeId){
+  const day = document.getElementById('qa-day-'+recipeId).value;
+  const meal = document.getElementById('qa-meal-'+recipeId).value;
+  assignRecipe(day, meal, recipeId);
+  renderLibrary();
+}
+
+/* ===================== RECIPE BUILDER MODAL ===================== */
+function openRecipeModal(recipeId){
+  builderEditingId = recipeId;
+  const existing = recipeId ? recipeDB.find(r => r.id === recipeId) : null;
+  document.getElementById('recipe-modal-title').textContent = existing ? 'Edit recipe' : 'New recipe';
+  document.getElementById('rb-name').value = existing ? existing.name : '';
+  document.getElementById('rb-cuisine').value = existing ? (existing.cuisine || '') : '';
+  document.getElementById('rb-time').value = existing && existing.prepTime != null ? existing.prepTime : '';
+  document.getElementById('rb-error').textContent = '';
+
+  document.getElementById('rb-mealtypes').innerHTML = MEAL_TYPES.map(m => `<label><input type="checkbox" value="${m}" ${existing && existing.mealTypes.includes(m) ? 'checked' : ''}> ${m}</label>`).join('');
+
+  builderIngredients = existing ? existing.ingredients.map(i => ({id:i.id, qty:i.qty})) : [];
+  renderBuilderIngredientList();
+
+  document.getElementById('rb-instructions').value = existing ? (existing.instructions || '') : '';
+  document.getElementById('rb-delete-btn').style.display = existing ? 'inline-block' : 'none';
+  renderAddToPlanSection(existing);
+  openModal('recipe-modal-overlay');
+}
+function renderBuilderIngredientList(){
+  const wrap = document.getElementById('rb-ing-list');
+  wrap.innerHTML = builderIngredients.length === 0 ? '<div class="empty-note">No ingredients yet — add one below.</div>' :
+    builderIngredients.map((row, idx) => {
+      const ing = ingredientDB[row.id];
+      return `<div class="editor-ing-row" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-soft);">
+        <div style="flex:1;font-size:13.5px;">${ing.canonicalName}</div>
+        <input type="number" min="0" step="1" value="${row.qty}" onchange="updateBuilderQty(${idx}, this.value)" style="width:62px;border:1px solid var(--line);border-radius:2px;padding:5px 6px;font-size:13px;text-align:right;">
+        <div style="font-size:11.5px;color:var(--ink-faint);width:34px;">${ing.unit}</div>
+        <button class="icon-btn remove" title="Remove" onclick="removeBuilderIngredient(${idx})">&times;</button>
+      </div>`;
+    }).join('');
+  renderNutritionBlock(calcNutrition(builderIngredients), 'rb-kcal', 'rb-macros', 'rb-micros');
+}
+function updateBuilderQty(idx, val){ builderIngredients[idx].qty = Math.max(0, parseFloat(val) || 0); renderBuilderIngredientList(); }
+function removeBuilderIngredient(idx){ builderIngredients.splice(idx,1); renderBuilderIngredientList(); }
+function addIngredientRowToBuilder(id, qty){
+  const existing = builderIngredients.find(r => r.id === id);
+  if(existing) existing.qty += qty; else builderIngredients.push({id, qty});
+  renderBuilderIngredientList();
+}
+function readBuilderMealTypes(){ return [...document.querySelectorAll('#rb-mealtypes input:checked')].map(el => el.value); }
+function validateBuilder(){
+  const name = document.getElementById('rb-name').value.trim();
+  const mealTypes = readBuilderMealTypes();
+  if(!name) return 'Give the recipe a name.';
+  if(builderIngredients.length === 0) return 'Add at least one ingredient.';
+  if(mealTypes.length === 0) return 'Choose at least one meal type.';
+  return null;
+}
+function buildRecipeFromForm(){
+  const name = document.getElementById('rb-name').value.trim();
+  const cuisine = document.getElementById('rb-cuisine').value.trim();
+  const timeVal = document.getElementById('rb-time').value;
+  const prepTime = timeVal !== '' ? Math.max(0, parseInt(timeVal)||0) : null;
+  const mealTypes = readBuilderMealTypes();
+  const instructions = document.getElementById('rb-instructions').value.trim();
+  const flags = computeRecipeFlags(builderIngredients);
+  return {
+    id: builderEditingId || genId(), name, cuisine, prepTime, mealTypes,
+    ingredients: builderIngredients.map(r => ({id:r.id, qty:r.qty})), instructions,
+    vegetarian: flags.vegetarian, vegan: flags.vegan, allergens: flags.allergens, createdAt: Date.now()
+  };
+}
+function saveRecipeFromModal(){
+  const err = validateBuilder();
+  if(err){ document.getElementById('rb-error').textContent = err; return; }
+  const recipe = buildRecipeFromForm();
+  const idx = recipeDB.findIndex(r => r.id === recipe.id);
+  if(idx >= 0) recipeDB[idx] = recipe; else recipeDB.push(recipe);
+  saveRecipes();
+  closeModal('recipe-modal-overlay');
+  renderLibrary();
+}
+function deleteRecipeFromModal(){
+  if(!builderEditingId) return;
+  if(!confirm('Delete this recipe? Meals already planned with it will keep their own ingredient list and won\'t be affected.')) return;
+  recipeDB = recipeDB.filter(r => r.id !== builderEditingId);
+  state.favorites.delete(builderEditingId);
+  saveRecipes(); saveSettings();
+  closeModal('recipe-modal-overlay');
+  renderLibrary();
+}
+function renderAddToPlanSection(existing){
+  const wrap = document.getElementById('rb-add-to-plan-section');
+  if(!existing){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div class="section-label">Add to this week's plan</div>
+    <div class="add-to-plan-row">
+      <select id="rb-plan-day">${DAYS.map(d => `<option value="${d}">${d}</option>`).join('')}</select>
+      <select id="rb-plan-meal">${existing.mealTypes.map(m => `<option value="${m}">${m}</option>`).join('')}</select>
+      <button class="btn-sm" onclick="addCurrentRecipeToPlan()">Add</button>
+    </div>`;
+}
+function addCurrentRecipeToPlan(){
+  saveRecipeFromModal();
+  const day = document.getElementById('rb-plan-day') ? document.getElementById('rb-plan-day').value : DAYS[0];
+  const meal = document.getElementById('rb-plan-meal') ? document.getElementById('rb-plan-meal').value : MEAL_TYPES[0];
+  if(builderEditingId) assignRecipe(day, meal, builderEditingId);
+}
+
+/* ===================== PANTRY ===================== */
+function renderPantryList(){
+  const wrap = document.getElementById('pantry-list');
+  const ids = Object.keys(state.pantry).sort((a,b) => ingredientDB[a].canonicalName.localeCompare(ingredientDB[b].canonicalName));
+  wrap.innerHTML = ids.length === 0 ? '<div class="empty-note">Nothing in your pantry yet.</div>' : ids.map(id => {
+    const ing = ingredientDB[id];
+    const exp = pantryExpiry(id);
+    const fresh = getFreshnessInfo(exp);
+    return `<div class="pantry-row">
+      <div class="pname">${ing.canonicalName}${fresh.label ? ` <span class="badge ${fresh.cls}">${fresh.label}</span>` : ''}</div>
+      <input type="number" min="0" value="${pantryQty(id)}" onchange="updatePantryQty('${id}', this.value)">
+      <span style="font-size:12px;color:var(--ink-faint);width:26px;">${ing.unit==='piece'?'pc':'g'}</span>
+      <input type="date" value="${exp||''}" title="Best-before / expiry date" onchange="updatePantryExpiry('${id}', this.value)" style="border:1px solid var(--line);border-radius:2px;padding:4px 6px;font-size:12px;">
+      <button class="icon-btn remove" onclick="removePantryItem('${id}')">&times;</button>
+    </div>`;
+  }).join('');
+}
+function addPantryIngredient(id, qty, expiresOn){
+  const existingExp = pantryExpiry(id);
+  state.pantry[id] = {qty: pantryQty(id) + qty, expiresOn: expiresOn || existingExp || null};
+  saveSettings(); renderPantryList(); renderShopping();
+}
+function updatePantryQty(id, val){
+  const exp = pantryExpiry(id);
+  state.pantry[id] = {qty: Math.max(0, parseFloat(val) || 0), expiresOn: exp};
+  saveSettings(); renderShopping();
+}
+function updatePantryExpiry(id, val){
+  state.pantry[id] = {qty: pantryQty(id), expiresOn: val || null};
+  saveSettings(); renderPantryList(); renderPlanDashboard();
+}
+function removePantryItem(id){ delete state.pantry[id]; saveSettings(); renderPantryList(); renderShopping(); }
+
+/* ===================== SHOPPING LIST ===================== */
+function renderShopping(){
+  const required = {};
+  DAYS.forEach(day => MEAL_TYPES.forEach(meal => {
+    const slot = state.plan[key(day, meal)];
+    if(slot){ slot.ingredients.forEach(row => { if(row.qty > 0) required[row.id] = (required[row.id] || 0) + row.qty; }); }
+  }));
+  const container = document.getElementById('shopping-content');
+  const summaryEl = document.getElementById('shop-summary');
+  const ids = Object.keys(required);
+  if(ids.length === 0){
+    summaryEl.innerHTML = '';
+    container.innerHTML = '<div class="shop-empty">Nothing planned yet. Add meals to the weekly plan and your shopping list — and what it still needs after your pantry — will build here.</div>';
+    return;
+  }
+  let toBuyCount = 0, coveredCount = 0;
+  ids.forEach(id => { const toBuy = Math.max(0, required[id] - pantryQty(id)); if(toBuy > 0) toBuyCount++; else coveredCount++; });
+  summaryEl.innerHTML = `
+    <div class="ss-box"><div class="ss-num">${toBuyCount}</div><div class="ss-label">items to buy</div></div>
+    <div class="ss-box"><div class="ss-num">${coveredCount}</div><div class="ss-label">items already covered by pantry</div></div>`;
+
+  const catOrder = ['produce','protein','dairy','grain','legume','fruit','pantry','spice','sauce','seed_nut','powder'];
+  const catLabel = {produce:'Produce', protein:'Protein', dairy:'Dairy', grain:'Grains', legume:'Legumes', fruit:'Fruit', pantry:'Pantry & oils', spice:'Spices', sauce:'Sauces & condiments', seed_nut:'Seeds & nuts', powder:'Protein powders'};
+  const unitLabel = (ing, n) => ing.unit === 'piece' ? (n===1?'pc':'pcs') : 'g';
+
+  const needIds = ids.filter(id => Math.max(0, required[id]-pantryQty(id)) > 0);
+  const haveIds = ids.filter(id => Math.max(0, required[id]-pantryQty(id)) <= 0);
+
+  function groupBlock(title, idList){
+    if(idList.length === 0) return '';
+    const byCat = {};
+    idList.forEach(id => { const cat = ingredientDB[id].category; (byCat[cat]=byCat[cat]||[]).push(id); });
+    return `<div class="shop-group"><h3>${title}</h3>` + catOrder.filter(c=>byCat[c]).map(cat => {
+      const items = byCat[cat].sort((a,b)=>ingredientDB[a].canonicalName.localeCompare(ingredientDB[b].canonicalName));
+      return items.map(id => {
+        const ing = ingredientDB[id];
+        const need = required[id]; const have = pantryQty(id); const toBuy = Math.max(0, need-have);
+        const checked = state.shoppingChecked[id] ? 'checked' : ''; const doneClass = state.shoppingChecked[id] ? 'done' : '';
+        return `<label class="shop-item ${doneClass}">
+          <input type="checkbox" ${checked} onchange="toggleShoppingItem('${id}')">
+          <span class="name">${ing.canonicalName}</span>
+          <span class="qty">${toBuy>0 ? roundQty(toBuy)+' '+unitLabel(ing,toBuy) : roundQty(need)+' '+unitLabel(ing,need)}
+            <small>${toBuy>0 ? 'need '+roundQty(need)+unitLabel(ing,need)+' · have '+roundQty(have)+unitLabel(ing,have) : 'covered by pantry'}</small>
+          </span>
+        </label>`;
+      }).join('');
+    }).join('') + `</div>`;
+  }
+  container.innerHTML = groupBlock('NEED TO BUY', needIds) + groupBlock('ALREADY HAVE', haveIds);
+}
+function roundQty(q){ return q % 1 === 0 ? q : q.toFixed(1); }
+function toggleShoppingItem(id){ state.shoppingChecked[id] = !state.shoppingChecked[id]; saveSettings(); renderShopping(); }
+
+/* ===================== TARGETS & NUTRITION TAB ===================== */
+function applyPreset(name){
+  state.activePreset = name;
+  const preset = PRESETS[name];
+  const kcal = state.targets.kcal;
+  state.targets.protein = Math.round((kcal * preset.pct.protein) / 4);
+  state.targets.carbs = Math.round((kcal * preset.pct.carbs) / 4);
+  state.targets.fat = Math.round((kcal * preset.pct.fat) / 9);
+  saveSettings(); renderNutritionTab(); renderPlanDashboard();
+}
+function updateTargetField(field, val){
+  state.targets[field] = Math.max(0, parseFloat(val) || 0);
+  if(field === 'kcal' && PRESETS[state.activePreset]) applyPreset(state.activePreset);
+  else { state.activePreset = 'custom'; saveSettings(); renderNutritionTab(); renderPlanDashboard(); }
+}
+function renderPresetButtons(){
+  const wrap = document.getElementById('preset-buttons');
+  const buttons = Object.keys(PRESETS).map(k => `<button class="preset-btn ${state.activePreset===k?'active':''}" onclick="applyPreset('${k}')">${PRESETS[k].label}</button>`);
+  buttons.push(`<button class="preset-btn ${state.activePreset==='custom'?'active':''}" disabled style="opacity:${state.activePreset==='custom'?1:0.5}">Custom</button>`);
+  wrap.innerHTML = buttons.join('');
+}
+function renderTargetFields(){
+  const wrap = document.getElementById('target-fields');
+  const order = ['kcal','protein','carbs','fat','fiber','sugar','sodium','calcium','iron','potassium','magnesium','zinc','vitA','vitC','vitD','vitE','vitK'];
+  wrap.innerHTML = order.map(n => `<div class="target-field"><label>${NUTRIENT_LABEL[n]}</label><div><input type="number" min="0" value="${state.targets[n]}" onchange="updateTargetField('${n}', this.value)"><span class="unit">${NUTRIENT_UNIT[n]}</span></div></div>`).join('');
+}
+function renderDayPicker(){
+  const wrap = document.getElementById('day-picker');
+  wrap.innerHTML = DAYS.map(d => `<button class="day-btn ${state.nutritionActiveDay===d?'active':''}" onclick="setNutritionDay('${d}')">${d}</button>`).join('') +
+    `<button class="day-btn ${state.nutritionActiveDay==='Week'?'active':''}" onclick="setNutritionDay('Week')">Week avg</button>`;
+}
+function setNutritionDay(d){ state.nutritionActiveDay = d; renderNutritionTab(); }
+function renderNutrientBars(containerId, list){
+  const container = document.getElementById(containerId);
+  let actuals;
+  if(state.nutritionActiveDay === 'Week'){ const wk = calcWeekNutrients(); actuals = {}; NUT_KEYS.forEach(n => actuals[n] = wk[n]/7); }
+  else actuals = calcDayNutrients(state.nutritionActiveDay);
+  container.innerHTML = list.map(n => {
+    const target = state.targets[n]; const actual = actuals[n];
+    const isLimit = LIMIT_NUTRIENTS.includes(n);
+    const pct = target > 0 ? Math.min(130, (actual/target)*100) : 0;
+    const color = barColor(actual, target, isLimit);
+    return `<div class="nutri-row"><div class="top-line"><span>${NUTRIENT_LABEL[n]}</span><span class="t">${Math.round(actual)} / ${Math.round(target)} ${NUTRIENT_UNIT[n]}</span></div><div class="nutri-bar"><div class="fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+  }).join('');
+}
+
+/* ---- "What should I eat next?" assistant ---- */
+function renderAssistantPanel(){
+  const panel = document.getElementById('assistant-panel');
+  if(recipeDB.length === 0){
+    panel.innerHTML = `<h4>What should I eat next?</h4><p class="short-on">Create some recipes first, and Larder will suggest ones that fit your remaining daily targets.</p>`;
+    return;
+  }
+  if(state.nutritionActiveDay === 'Week'){
+    panel.innerHTML = `<h4>What should I eat next?</h4><p class="short-on">Pick a specific day above to get suggestions for that day's remaining targets.</p>`;
+    return;
+  }
+  const day = state.nutritionActiveDay;
+  const actual = calcDayNutrients(day);
+  const gaps = {};
+  ['kcal','protein','carbs','fat','fiber','iron','calcium','vitC','potassium'].forEach(n => gaps[n] = Math.max(0, state.targets[n] - actual[n]));
+  const emptySlots = MEAL_TYPES.filter(m => !state.plan[key(day, m)]);
+  if(emptySlots.length === 0){
+    panel.innerHTML = `<h4>What should I eat next?</h4><p class="short-on">All meals for ${day} are already planned.</p>`;
+    return;
+  }
+  const shortList = ['protein','fiber','iron','calcium','vitC'].filter(n => gaps[n] > 0).slice(0,2)
+    .map(n => `${Math.round(gaps[n])}${NUTRIENT_UNIT[n]} ${NUTRIENT_LABEL[n].toLowerCase()}`);
+
+  const candidates = recipeDB.filter(r => recipePassesFilters(r) && r.mealTypes.some(m => emptySlots.includes(m)));
+  const scored = candidates.map(r => {
+    const c = calcNutrition(r.ingredients);
+    const proteinClosure = gaps.protein > 0 ? Math.min(c.protein, gaps.protein) / gaps.protein : 0;
+    const kcalFit = gaps.kcal > 0 ? Math.max(0, 1 - Math.abs(c.kcal - gaps.kcal) / gaps.kcal) : 0;
+    let microScore = 0, microCount = 0;
+    ['iron','calcium','vitC','potassium','fiber'].forEach(n => { if(gaps[n] > 0){ microScore += Math.min(c[n], gaps[n]) / gaps[n]; microCount++; } });
+    microScore = microCount > 0 ? microScore / microCount : 0;
+    const score = proteinClosure * 0.5 + kcalFit * 0.3 + microScore * 0.2;
+    return {r, c, score, proteinClosure};
+  }).sort((a,b) => b.score - a.score).slice(0, 3);
+
+  panel.innerHTML = `<h4>What should I eat next?</h4>
+    <p class="short-on">${shortList.length ? "You're short on: <strong>"+shortList.join(', ')+"</strong>" : "You're close to today's targets already."}</p>
+    ${scored.map((s,i) => {
+      const slotForThis = emptySlots.find(m => s.r.mealTypes.includes(m)) || emptySlots[0];
+      return `<div class="gap-card">
+        <div class="gtitle">${s.r.name}</div>
+        <div class="gnums">${Math.round(s.c.kcal)} kcal · ${Math.round(s.c.protein)}g protein · ${Math.round(s.c.fiber)}g fiber</div>
+        <div class="gexplain">${i===0 ? 'Best overall fit for your remaining targets.' : 'Provides approximately '+Math.round(s.c.protein)+'g protein and '+Math.round(s.c.kcal)+' kcal.'}</div>
+        <button class="btn-sm" onclick="assignRecipe('${day}','${slotForThis}','${s.r.id}')">Add to ${slotForThis}</button>
+      </div>`;
+    }).join('') || '<div class="empty-note">No suitable recipes found for your current filters.</div>'}`;
+}
+function renderNutritionTab(){
+  if(!state.nutritionActiveDay) state.nutritionActiveDay = weekdayLabelFromDate(new Date());
+  renderPresetButtons(); renderTargetFields(); renderDayPicker();
+  renderNutrientBars('macro-bars', MACROS); renderNutrientBars('micro-bars', MICROS);
+  renderAssistantPanel();
+}
+
+/* ===================== PLAN MY WEEK ===================== */
+function openPlanWeekModal(){
+  if(recipeDB.length === 0){ alert("Add a few recipes first (in the Recipes tab), then Larder can draft a week for you."); return; }
+  generatePlanWeekDraft();
+  openModal('planweek-overlay');
+}
+function regeneratePlanWeek(){ generatePlanWeekDraft(); }
+function generatePlanWeekDraft(){
+  const usageCount = {};
+  planWeekDraft = {};
+  DAYS.forEach(day => {
+    MEAL_TYPES.forEach(meal => {
+      const candidates = recipeDB.filter(r => r.mealTypes.includes(meal) && recipePassesFilters(r));
+      if(candidates.length === 0) return;
+      const perMealKcalTarget = state.targets.kcal / 4;
+      const perMealProteinTarget = state.targets.protein / 4;
+      const scored = candidates.map(r => {
+        const c = calcNutrition(r.ingredients);
+        const kcalFit = 1 - Math.min(1, Math.abs(c.kcal - perMealKcalTarget) / perMealKcalTarget);
+        const proteinFit = 1 - Math.min(1, Math.abs(c.protein - perMealProteinTarget) / (perMealProteinTarget||1));
+        const pantryBonus = pantryMatchInfo(r).pct / 100;
+        const repeatPenalty = (usageCount[r.id] || 0) * 0.35;
+        const score = kcalFit*0.4 + proteinFit*0.3 + pantryBonus*0.15 - repeatPenalty + Math.random()*0.1;
+        return {r, score};
+      }).sort((a,b) => b.score - a.score);
+      const pick = scored[0].r;
+      usageCount[pick.id] = (usageCount[pick.id] || 0) + 1;
+      planWeekDraft[key(day, meal)] = pick.id;
+    });
+  });
+  renderPlanWeekPreview();
+}
+function renderPlanWeekPreview(){
+  const body = document.getElementById('planweek-body');
+  let totalKcal = 0;
+  const rows = DAYS.map(day => {
+    const cells = MEAL_TYPES.map(meal => {
+      const recipeId = planWeekDraft[key(day, meal)];
+      if(!recipeId) return `<div class="empty-note" style="padding:4px 0;">No recipe available</div>`;
+      const r = recipeDB.find(x => x.id === recipeId);
+      const c = calcNutrition(r.ingredients);
+      totalKcal += c.kcal;
+      return `<div style="font-size:12.5px;"><strong>${meal}:</strong> ${r.name} <span style="color:var(--ink-faint);">(${Math.round(c.kcal)} kcal)</span>
+        <button class="icon-btn" title="Change this meal" onclick="changeDraftMeal('${day}','${meal}')" style="font-size:11px;">&#9998;</button></div>`;
+    }).join('');
+    return `<div style="border-bottom:1px solid var(--line-soft);padding:10px 0;"><div style="font-weight:600;margin-bottom:4px;">${day}</div>${cells}</div>`;
+  }).join('');
+  body.innerHTML = `<p style="font-size:12.5px;color:var(--ink-soft);">Draft average: ~${Math.round(totalKcal/7)} kcal/day across your week (target ${state.targets.kcal} kcal/day).</p>` + rows;
+}
+function changeDraftMeal(day, meal){
+  const candidates = recipeDB.filter(r => r.mealTypes.includes(meal) && recipePassesFilters(r));
+  if(candidates.length <= 1){ alert('No alternative recipes available for this meal type yet.'); return; }
+  const current = planWeekDraft[key(day,meal)];
+  const others = candidates.filter(r => r.id !== current);
+  planWeekDraft[key(day,meal)] = others[Math.floor(Math.random()*others.length)].id;
+  renderPlanWeekPreview();
+}
+function applyPlanWeek(){
+  Object.keys(planWeekDraft).forEach(k => {
+    const [day, meal] = k.split('__');
+    const recipe = recipeDB.find(r => r.id === planWeekDraft[k]);
+    if(!recipe) return;
+    state.plan[k] = {
+      recipeId: recipe.id, recipeName: recipe.name, cuisine: recipe.cuisine, mealType: meal,
+      ingredients: recipe.ingredients.map(i => ({id:i.id, qty:i.qty})), instructions: recipe.instructions
+    };
+  });
+  savePlan();
+  closeModal('planweek-overlay');
+  renderPlanDashboard();
+}
+
+/* ===================== MEAL TRACKER ===================== */
+function getPlannedMealForDate(dateKey, mealType){
+  const weekday = weekdayLabelFromDate(new Date(dateKey + 'T00:00:00'));
+  return state.plan[key(weekday, mealType)] || null;
+}
+function getTrackerEntry(dateKey, mealType){
+  return (state.tracker[dateKey] && state.tracker[dateKey][mealType]) || {status:'planned'};
+}
+function setTrackerEntry(dateKey, mealType, entry){
+  state.tracker[dateKey] = state.tracker[dateKey] || {};
+  state.tracker[dateKey][mealType] = entry;
+  saveTracker();
+}
+function markEaten(dateKey, mealType){
+  const planned = getPlannedMealForDate(dateKey, mealType);
+  if(!planned) return;
+  setTrackerEntry(dateKey, mealType, {status:'eaten', ingredients:null, name: planned.recipeName});
+}
+function markSkipped(dateKey, mealType){ setTrackerEntry(dateKey, mealType, {status:'skipped'}); }
+function undoTracking(dateKey, mealType){
+  if(state.tracker[dateKey]){ delete state.tracker[dateKey][mealType]; saveTracker(); }
+}
+function editActualPortions(dateKey, mealType){
+  const planned = getPlannedMealForDate(dateKey, mealType);
+  const entry = getTrackerEntry(dateKey, mealType);
+  const baseIngredients = entry.ingredients || (planned ? planned.ingredients.map(i=>({id:i.id,qty:i.qty})) : []);
+  editingKey = '__tracker__' + dateKey + '__' + mealType;
+  window._trackerEditBuffer = baseIngredients.map(i => ({id:i.id, qty:i.qty}));
+  document.getElementById('editor-title').textContent = `Actual portions — ${mealType}, ${dateKey}`;
+  renderTrackerEditorList();
+  document.getElementById('editor-instructions').textContent = planned ? (planned.instructions||'No instructions.') : '';
+  document.getElementById('swap-section').innerHTML = '';
+  document.getElementById('swap-note-area').innerHTML = '';
+  openModal('editor-overlay');
+}
+function renderTrackerEditorList(){
+  const rows = window._trackerEditBuffer;
+  const wrap = document.getElementById('editor-ing-list');
+  wrap.innerHTML = rows.length === 0 ? '<div class="empty-note">No ingredients — add one below.</div>' : rows.map((row, idx) => {
+    const ing = ingredientDB[row.id];
+    const step = stepAmount(ing.unit, row.qty);
+    return `<div class="stepper-row">
+      <div class="sr-name">${ing.canonicalName}</div>
+      <div class="stepper">
+        <button onclick="bumpTrackerQty(${idx}, ${-step})">&minus;</button>
+        <input type="number" min="0" value="${row.qty}" onchange="updateTrackerQty(${idx}, this.value)">
+        <span class="unit">${ing.unit==='piece'?'pc':'g'}</span>
+        <button onclick="bumpTrackerQty(${idx}, ${step})">+</button>
+      </div>
+      <button class="icon-btn remove" onclick="removeTrackerIngredient(${idx})">&times;</button>
+    </div>`;
+  }).join('');
+  renderNutritionBlock(calcNutrition(rows), 'editor-kcal', 'editor-macros', 'editor-micros');
+}
+function bumpTrackerQty(idx, delta){ window._trackerEditBuffer[idx].qty = Math.max(0, window._trackerEditBuffer[idx].qty + delta); renderTrackerEditorList(); }
+function updateTrackerQty(idx, val){ window._trackerEditBuffer[idx].qty = Math.max(0, parseFloat(val)||0); renderTrackerEditorList(); }
+function removeTrackerIngredient(idx){ window._trackerEditBuffer.splice(idx,1); renderTrackerEditorList(); }
+function saveTrackerPortionsAndClose(){
+  const parts = editingKey.split('__');
+  const dateKey = parts[2], mealType = parts[3];
+  const planned = getPlannedMealForDate(dateKey, mealType);
+  setTrackerEntry(dateKey, mealType, {status:'eaten', ingredients: window._trackerEditBuffer.map(r=>({id:r.id,qty:r.qty})), name: planned?planned.recipeName:'Edited meal'});
+  closeModal('editor-overlay');
+  renderTrackerTab();
+  renderPlanDashboard();
+}
+// Hook the editor's close for tracker-mode edits to persist automatically.
+const _origCloseModal = closeModal;
+closeModal = function(id){
+  if(id === 'editor-overlay' && typeof editingKey === 'string' && editingKey.startsWith('__tracker__')){
+    saveTrackerPortionsAndCloseInner();
+  }
+  _origCloseModal(id);
+};
+function saveTrackerPortionsAndCloseInner(){
+  const parts = editingKey.split('__');
+  const dateKey = parts[2], mealType = parts[3];
+  const planned = getPlannedMealForDate(dateKey, mealType);
+  if(window._trackerEditBuffer){
+    setTrackerEntry(dateKey, mealType, {status:'eaten', ingredients: window._trackerEditBuffer.map(r=>({id:r.id,qty:r.qty})), name: planned?planned.recipeName:'Edited meal'});
+    renderTrackerTab();
+    renderPlanDashboard();
+  }
+}
+
+function calcActualNutritionForDate(dateKey){
+  const totals = {}; NUT_KEYS.forEach(k => totals[k]=0);
+  MEAL_TYPES.forEach(meal => {
+    const entry = getTrackerEntry(dateKey, meal);
+    if(entry.status === 'eaten' || entry.status === 'replaced'){
+      const ingredients = entry.ingredients || (getPlannedMealForDate(dateKey, meal)||{ingredients:[]}).ingredients;
+      const c = calcNutrition(ingredients);
+      NUT_KEYS.forEach(k => totals[k] += c[k]);
+    }
+  });
+  (state.tracker[dateKey] && state.tracker[dateKey].extra || []).forEach(item => {
+    const c = calcNutrition(item.ingredients);
+    NUT_KEYS.forEach(k => totals[k] += c[k]);
+  });
+  return totals;
+}
+function countPlannedForDate(dateKey){
+  const weekday = weekdayLabelFromDate(new Date(dateKey+'T00:00:00'));
+  return MEAL_TYPES.filter(m => state.plan[key(weekday,m)]).length;
+}
+function countCompletedForDate(dateKey){
+  return MEAL_TYPES.filter(m => { const e = getTrackerEntry(dateKey,m); return e.status==='eaten'||e.status==='replaced'; }).length;
+}
+
+function renderTrackerTab(){
+  renderTrackerToday();
+  renderYearNav();
+  renderTrackerStats();
+  renderStreaks();
+  renderCalendar();
+}
+function renderTrackerToday(){
+  const tKey = todayKey();
+  const weekday = weekdayLabelFromDate(new Date());
+  const wrap = document.getElementById('tracker-today');
+  const plannedCount = countPlannedForDate(tKey);
+  const completedCount = countCompletedForDate(tKey);
+  const actual = calcActualNutritionForDate(tKey);
+  const metrics = ['kcal','protein','carbs','fat','fiber'];
+
+  const mealsHtml = MEAL_TYPES.map(meal => {
+    const planned = state.plan[key(weekday, meal)];
+    const entry = getTrackerEntry(tKey, meal);
+    if(!planned){
+      return `<div class="day-detail-meal"><div class="ddm-top"><strong>${meal}</strong><span class="badge muted">Not planned</span></div>
+        <button class="btn-sm secondary" onclick="openLogFood('${tKey}','${meal}')">+ Log food</button></div>`;
+    }
+    const totals = entry.status==='eaten'||entry.status==='replaced' ? calcNutrition(entry.ingredients || planned.ingredients) : calcMealNutrients(planned);
+    const iconMap = {planned:'○', eaten:'✓', replaced:'↻', skipped:'✕'};
+    return `<div class="day-detail-meal">
+      <div class="ddm-top">
+        <strong>${meal} — ${iconMap[entry.status]} ${planned.recipeName}</strong>
+        <span class="track-status ${entry.status}">${entry.status}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin:4px 0 8px;">${Math.round(totals.kcal)} kcal${entry.status==='eaten'&&entry.ingredients ? ' (actual portions)' : ''}</div>
+      <div class="row-actions">
+        ${entry.status!=='eaten' ? `<button class="primary" onclick="markEatenAndRefresh('${tKey}','${meal}')">&#10003; Mark eaten</button>` : ''}
+        <button onclick="editActualPortions('${tKey}','${meal}')">Edit actual</button>
+        ${entry.status!=='skipped' ? `<button onclick="markSkippedAndRefresh('${tKey}','${meal}')">Mark skipped</button>` : ''}
+        ${entry.status!=='planned' ? `<button onclick="undoAndRefresh('${tKey}','${meal}')">Undo</button>` : ''}
+        <button onclick="openLogFood('${tKey}','${meal}')">Replace with something else</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const completionPct = plannedCount>0 ? Math.round((completedCount/plannedCount)*100) : 0;
+  wrap.innerHTML = `
+    <div class="dash-metrics" style="margin-bottom:16px;">
+      ${metrics.map(n => {
+        const target = state.targets[n]; const pct = target>0?Math.min(130,(actual[n]/target)*100):0;
+        return `<div class="dm-cell"><div class="dm-label">${NUTRIENT_LABEL[n]}</div><div class="dm-value">${Math.round(actual[n])} <small>/ ${Math.round(target)}${NUTRIENT_UNIT[n]}</small></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${barColor(actual[n],target,LIMIT_NUTRIENTS.includes(n))}"></div></div></div>`;
+      }).join('')}
+    </div>
+    <div class="dash-counts" style="margin-bottom:14px;">
+      <span>Meals: <strong>${completedCount}/${plannedCount||4}</strong> completed</span>
+      <span>Daily completion: <strong>${completionPct}%</strong></span>
+      <button class="btn-sm secondary" style="margin-left:auto;" onclick="openLogFood('${tKey}', null)">+ Log unplanned food</button>
+    </div>
+    ${mealsHtml}
+  `;
+}
+function markEatenAndRefresh(dateKey, meal){ markEaten(dateKey, meal); renderTrackerTab(); renderPlanDashboard(); }
+function markSkippedAndRefresh(dateKey, meal){ markSkipped(dateKey, meal); renderTrackerTab(); renderPlanDashboard(); }
+function undoAndRefresh(dateKey, meal){ undoTracking(dateKey, meal); renderTrackerTab(); renderPlanDashboard(); }
+
+/* ---- Log food (planned replacement or unplanned extra) ---- */
+function openLogFood(dateKey, mealType){
+  logFoodTarget = {dateKey, mealType};
+  document.getElementById('logfood-mode').value = 'recipe';
+  renderLogFoodBody();
+  openModal('logfood-overlay');
+}
+function renderLogFoodBody(){
+  const mode = document.getElementById('logfood-mode').value;
+  const body = document.getElementById('logfood-body');
+  if(mode === 'recipe'){
+    body.innerHTML = `<select class="select-input" id="logfood-recipe-select" style="width:100%;">${recipeDB.map(r => `<option value="${r.id}">${r.name}</option>`).join('') || '<option disabled>No recipes yet</option>'}</select>`;
+  } else {
+    window._logFoodCustomIngredients = window._logFoodCustomIngredients || [];
+    body.innerHTML = `<div class="form-row"><label>Name (optional)</label><input type="text" id="logfood-name" placeholder="e.g. Restaurant dinner"></div>
+      <div id="logfood-custom-list"></div>
+      <button class="btn-sm" onclick="openIngredientPicker(addLogFoodIngredientNew)">+ Add ingredient</button>`;
+    renderLogFoodCustomList();
+  }
+}
+function renderLogFoodCustomList(){
+  const wrap = document.getElementById('logfood-custom-list');
+  const rows = window._logFoodCustomIngredients;
+  wrap.innerHTML = rows.map((row, idx) => `<div class="editor-ing-row"><div class="ei-name" style="flex:1;">${ingredientDB[row.id].canonicalName}</div><div style="font-size:13px;">${row.qty}${ingredientDB[row.id].unit==='piece'?' pc':'g'}</div><button class="icon-btn remove" onclick="removeLogFoodIngredient(${idx})">&times;</button></div>`).join('') || '<div class="empty-note">No ingredients added yet.</div>';
+}
+function addLogFoodIngredientNew(id, qty){
+  window._logFoodCustomIngredients = window._logFoodCustomIngredients || [];
+  const existing = window._logFoodCustomIngredients.find(r => r.id === id);
+  if(existing) existing.qty += qty; else window._logFoodCustomIngredients.push({id, qty});
+  renderLogFoodCustomList();
+}
+function removeLogFoodIngredient(idx){ window._logFoodCustomIngredients.splice(idx,1); renderLogFoodCustomList(); }
+function saveLoggedFood(){
+  const mode = document.getElementById('logfood-mode').value;
+  const {dateKey, mealType} = logFoodTarget;
+  let ingredients, name;
+  if(mode === 'recipe'){
+    const recipeId = document.getElementById('logfood-recipe-select').value;
+    const recipe = recipeDB.find(r => r.id === recipeId);
+    if(!recipe) return;
+    ingredients = recipe.ingredients.map(i=>({id:i.id,qty:i.qty}));
+    name = recipe.name;
+  } else {
+    ingredients = (window._logFoodCustomIngredients||[]).map(i=>({id:i.id,qty:i.qty}));
+    name = document.getElementById('logfood-name').value.trim() || 'Logged food';
+    if(ingredients.length === 0){ alert('Add at least one ingredient.'); return; }
+  }
+  if(mealType){
+    setTrackerEntry(dateKey, mealType, {status:'replaced', ingredients, name});
+  } else {
+    state.tracker[dateKey] = state.tracker[dateKey] || {};
+    state.tracker[dateKey].extra = state.tracker[dateKey].extra || [];
+    state.tracker[dateKey].extra.push({name, ingredients, addedAt: Date.now()});
+    saveTracker();
+  }
+  window._logFoodCustomIngredients = [];
+  closeModal('logfood-overlay');
+  renderTrackerTab();
+  renderPlanDashboard();
+}
+
+/* ---- Yearly calendar ---- */
+function renderYearNav(){
+  document.getElementById('year-nav').innerHTML = `
+    <button onclick="shiftTrackerYear(-1)">&#8249;</button>
+    <span class="year-label">${state.trackerYear}</span>
+    <button onclick="shiftTrackerYear(1)" ${state.trackerYear>=new Date().getFullYear()?'disabled style="opacity:.4;cursor:default;"':''}>&#8250;</button>
+  `;
+}
+function shiftTrackerYear(delta){
+  const ny = state.trackerYear + delta;
+  if(ny > new Date().getFullYear()) return;
+  state.trackerYear = ny;
+  renderTrackerTab();
+}
+function dayLevel(dateKey){
+  if(!state.tracker[dateKey]) return 0;
+  const entries = MEAL_TYPES.map(m => state.tracker[dateKey][m]).filter(Boolean);
+  if(entries.length === 0 && !(state.tracker[dateKey].extra||[]).length) return 0;
+  const planned = countPlannedForDate(dateKey);
+  const completed = countCompletedForDate(dateKey);
+  if(planned === 0) return entries.length>0 ? 1 : 0;
+  const ratio = completed/planned;
+  if(ratio >= 1) return 3;
+  if(ratio >= 0.5) return 2;
+  if(ratio > 0) return 1;
+  return 0;
+}
+function renderCalendar(){
+  const year = state.trackerYear;
+  const start = new Date(year,0,1);
+  const end = new Date(year,11,31);
+  // align to the Monday on/before Jan 1 so weeks are consistent columns
+  const gridStart = new Date(start);
+  const startWeekday = (start.getDay()+6)%7; // Mon=0
+  gridStart.setDate(gridStart.getDate() - startWeekday);
+
+  const weeks = [];
+  let cursor = new Date(gridStart);
+  while(cursor <= end || weeks.length === 0 || cursor.getFullYear() <= year){
+    const week = [];
+    for(let i=0;i<7;i++){ week.push(new Date(cursor)); cursor = addDays(cursor,1); }
+    weeks.push(week);
+    if(cursor.getFullYear() > year) break;
+  }
+
+  const monthLabelRow = [];
+  let lastMonth = -1;
+  weeks.forEach((week, wi) => {
+    const firstOfMonthInWeek = week.find(d => d.getDate() <= 7 && d.getFullYear()===year);
+    if(firstOfMonthInWeek && firstOfMonthInWeek.getMonth() !== lastMonth){
+      lastMonth = firstOfMonthInWeek.getMonth();
+      monthLabelRow.push({wi, monthIdx: lastMonth, label: firstOfMonthInWeek.toLocaleDateString(undefined,{month:'short'})});
+    }
+  });
+  document.getElementById('cal-month-labels').innerHTML = weeks.map((w,wi) => {
+    const m = monthLabelRow.find(x => x.wi === wi);
+    return m ? `<button onclick="openMonthSummary(${year},${m.monthIdx})" style="width:14px;display:inline-block;background:none;border:none;font-size:10.5px;color:var(--ink-faint);cursor:pointer;padding:0;text-align:left;" title="View ${m.label} summary">${m.label}</button>` : `<span style="width:14px;display:inline-block;">&nbsp;</span>`;
+  }).join('');
+
+  const todK = todayKey();
+  document.getElementById('cal-grid').innerHTML = weeks.map(week => {
+    const cells = week.map(d => {
+      if(d.getFullYear() !== year) return `<button class="cal-day" style="visibility:hidden;"></button>`;
+      const dk = dateKeyFromDate(d);
+      const future = dk > todK;
+      const level = future ? 0 : dayLevel(dk);
+      const completed = countCompletedForDate(dk);
+      const planned = countPlannedForDate(dk);
+      const label = future ? formatShortDate(d)+' — upcoming' : `${formatShortDate(d)} — ${completed}/${planned} meals completed`;
+      return `<button class="cal-day ${future?'future':''}" data-level="${level}" title="${label}" aria-label="${label}" onclick="${future?`openFutureDayNote('${dk}')`:`openDayDetail('${dk}')`}"></button>`;
+    }).join('');
+    return `<div class="calendar-week-col">${cells}</div>`;
+  }).join('');
+}
+
+function computeYearStats(year){
+  const jan1 = dateKeyFromDate(new Date(year,0,1));
+  const dec31 = dateKeyFromDate(new Date(year,11,31));
+  const todK = todayKey();
+  const lastDay = dec31 < todK ? dec31 : todK;
+  let cursor = new Date(year,0,1);
+  let daysTracked=0, daysFullyCompleted=0, mealsEaten=0, mealsPlanned=0, kcalSum=0, proteinSum=0, trackedDaysForAvg=0;
+  const lastDate = new Date(lastDay+'T00:00:00');
+  while(cursor <= lastDate){
+    const dk = dateKeyFromDate(cursor);
+    if(state.tracker[dk]){
+      const hasAny = MEAL_TYPES.some(m=>state.tracker[dk][m]) || (state.tracker[dk].extra||[]).length>0;
+      if(hasAny){
+        daysTracked++;
+        const planned = countPlannedForDate(dk);
+        const completed = countCompletedForDate(dk);
+        mealsEaten += completed;
+        mealsPlanned += planned;
+        if(planned>0 && completed>=planned) daysFullyCompleted++;
+        const act = calcActualNutritionForDate(dk);
+        kcalSum += act.kcal; proteinSum += act.protein; trackedDaysForAvg++;
+      }
+    }
+    cursor = addDays(cursor,1);
+  }
+  const adherence = mealsPlanned>0 ? Math.round((mealsEaten/mealsPlanned)*100) : 0;
+  return {
+    daysTracked, daysFullyCompleted, mealsEaten, mealsPlanned, adherence,
+    avgKcal: trackedDaysForAvg>0 ? Math.round(kcalSum/trackedDaysForAvg) : 0,
+    avgProtein: trackedDaysForAvg>0 ? Math.round(proteinSum/trackedDaysForAvg) : 0
+  };
+}
+function computeMonthStats(year, monthIdx){
+  const todK = todayKey();
+  const daysInMonth = new Date(year, monthIdx+1, 0).getDate();
+  let cursor = new Date(year, monthIdx, 1);
+  let daysTracked=0, mealsCompleted=0, mealsPlanned=0, kcalSum=0, proteinSum=0, trackedDaysForAvg=0;
+  let bestDay=null, bestScore=-1;
+  for(let i=0;i<daysInMonth;i++){
+    const dk = dateKeyFromDate(cursor);
+    if(dk <= todK && state.tracker[dk]){
+      const hasAny = MEAL_TYPES.some(m=>state.tracker[dk][m]) || (state.tracker[dk].extra||[]).length>0;
+      if(hasAny){
+        daysTracked++;
+        const planned = countPlannedForDate(dk);
+        const completed = countCompletedForDate(dk);
+        mealsCompleted += completed; mealsPlanned += planned;
+        const act = calcActualNutritionForDate(dk);
+        kcalSum += act.kcal; proteinSum += act.protein; trackedDaysForAvg++;
+        const score = planned>0 ? completed/planned : 0;
+        if(score > bestScore){ bestScore = score; bestDay = dk; }
+      }
+    }
+    cursor = addDays(cursor,1);
+  }
+  return {
+    daysTracked, daysInMonth, mealsCompleted, mealsPlanned,
+    adherence: mealsPlanned>0 ? Math.round((mealsCompleted/mealsPlanned)*100) : 0,
+    avgKcal: trackedDaysForAvg>0 ? Math.round(kcalSum/trackedDaysForAvg) : 0,
+    avgProtein: trackedDaysForAvg>0 ? Math.round(proteinSum/trackedDaysForAvg) : 0,
+    bestDay
+  };
+}
+function openMonthSummary(year, monthIdx){
+  const s = computeMonthStats(year, monthIdx);
+  const monthName = new Date(year, monthIdx, 1).toLocaleDateString(undefined,{month:'long', year:'numeric'});
+  document.getElementById('monthsummary-title').textContent = monthName;
+  document.getElementById('monthsummary-body').innerHTML = `
+    <div class="target-field"><label>Days tracked</label><div>${s.daysTracked} / ${s.daysInMonth}</div></div>
+    <div class="target-field"><label>Meals completed</label><div>${s.mealsCompleted} / ${s.mealsPlanned}</div></div>
+    <div class="target-field"><label>Adherence</label><div>${s.adherence}%</div></div>
+    <div class="target-field"><label>Average calories</label><div>${s.avgKcal} kcal</div></div>
+    <div class="target-field"><label>Average protein</label><div>${s.avgProtein}g</div></div>
+    <div class="target-field"><label>Best day</label><div>${s.bestDay ? formatShortDate(new Date(s.bestDay+'T00:00:00')) : '—'}</div></div>
+  `;
+  openModal('monthsummary-overlay');
+}
+
+function renderTrackerStats(){
+  const s = computeYearStats(state.trackerYear);
+  document.getElementById('tracker-stats').innerHTML = `
+    <div class="tstat"><div class="ts-num">${s.daysTracked}</div><div class="ts-label">Days tracked</div></div>
+    <div class="tstat"><div class="ts-num">${s.daysFullyCompleted}</div><div class="ts-label">Days fully completed</div></div>
+    <div class="tstat"><div class="ts-num">${s.mealsEaten}/${s.mealsPlanned}</div><div class="ts-label">Meals eaten / planned</div></div>
+    <div class="tstat"><div class="ts-num">${s.adherence}%</div><div class="ts-label">Overall adherence</div></div>
+    <div class="tstat"><div class="ts-num">${s.avgKcal}</div><div class="ts-label">Avg daily calories</div></div>
+    <div class="tstat"><div class="ts-num">${s.avgProtein}g</div><div class="ts-label">Avg daily protein</div></div>
+  `;
+}
+function dayQualifiesForStreak(dk){
+  const planned = countPlannedForDate(dk);
+  if(planned === 0) return false;
+  const completed = countCompletedForDate(dk);
+  return (completed/planned) >= STREAK_THRESHOLD;
+}
+function computeStreaks(){
+  const todK = todayKey();
+  let cursor = new Date(todK+'T00:00:00');
+  let current = 0;
+  while(true){
+    const dk = dateKeyFromDate(cursor);
+    if(dk > todK) break;
+    if(dayQualifiesForStreak(dk)){ current++; cursor = addDays(cursor,-1); } else break;
+  }
+  // longest streak: scan all tracked dates in chronological order
+  const dates = Object.keys(state.tracker).filter(dk => dk <= todK).sort();
+  let longest = 0, run = 0, prevDate = null;
+  dates.forEach(dk => {
+    if(dayQualifiesForStreak(dk)){
+      if(prevDate){
+        const diffDays = Math.round((new Date(dk) - new Date(prevDate))/86400000);
+        run = diffDays === 1 ? run+1 : 1;
+      } else run = 1;
+      longest = Math.max(longest, run);
+      prevDate = dk;
+    } else { run = 0; prevDate = null; }
+  });
+  longest = Math.max(longest, current);
+  return {current, longest};
+}
+function renderStreaks(){
+  const s = computeStreaks();
+  document.getElementById('streak-row').innerHTML = `
+    <div class="streak-box"><div class="sb-num">${s.current}</div><div class="sb-label">Current streak (days)</div></div>
+    <div class="streak-box"><div class="sb-num">${s.longest}</div><div class="sb-label">Longest streak (days)</div></div>
+  `;
+}
+
+function openFutureDayNote(dateKey){
+  const d = new Date(dateKey+'T00:00:00');
+  document.getElementById('daydetail-title').textContent = formatLongDate(d);
+  document.getElementById('daydetail-body').innerHTML = `<p class="empty-note">This day hasn't happened yet, so there's nothing to track. Come back once it arrives.</p>`;
+  openModal('daydetail-overlay');
+}
+function openDayDetail(dateKey){
+  trackerActionDate = dateKey;
+  const d = new Date(dateKey+'T00:00:00');
+  const weekday = weekdayLabelFromDate(d);
+  document.getElementById('daydetail-title').textContent = formatLongDate(d);
+  const actual = calcActualNutritionForDate(dateKey);
+  const planned = countPlannedForDate(dateKey);
+  const completed = countCompletedForDate(dateKey);
+  const mealsHtml = MEAL_TYPES.map(meal => {
+    const plan = state.plan[key(weekday, meal)];
+    const entry = getTrackerEntry(dateKey, meal);
+    const iconMap = {planned:'○', eaten:'✓', replaced:'↻', skipped:'✕'};
+    if(!plan) return `<div class="day-detail-meal"><strong>${meal}</strong> <span class="badge muted">Not planned</span></div>`;
+    return `<div class="day-detail-meal">
+      <div class="ddm-top"><strong>${iconMap[entry.status]} ${meal} — ${entry.name || plan.recipeName}</strong><span class="track-status ${entry.status}">${entry.status}</span></div>
+      <div class="row-actions" style="margin-top:8px;">
+        ${entry.status!=='eaten' ? `<button onclick="markEatenAndRefreshDetail('${dateKey}','${meal}')">Mark eaten</button>` : ''}
+        <button onclick="closeModal('daydetail-overlay'); editActualPortions('${dateKey}','${meal}')">Edit actual</button>
+        ${entry.status!=='skipped' ? `<button onclick="markSkippedAndRefreshDetail('${dateKey}','${meal}')">Mark skipped</button>` : ''}
+        ${entry.status!=='planned' ? `<button onclick="undoAndRefreshDetail('${dateKey}','${meal}')">Undo</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('daydetail-body').innerHTML = `
+    <div class="dash-counts" style="margin-bottom:14px;">
+      <span>Meals completed: <strong>${completed}/${planned}</strong></span>
+      <span>Calories: <strong>${Math.round(actual.kcal)} / ${state.targets.kcal}</strong></span>
+      <span>Protein: <strong>${Math.round(actual.protein)}g / ${state.targets.protein}g</strong></span>
+    </div>
+    ${mealsHtml}
+  `;
+  openModal('daydetail-overlay');
+}
+function markEatenAndRefreshDetail(dk, meal){ markEaten(dk, meal); openDayDetail(dk); renderTrackerTab(); }
+function markSkippedAndRefreshDetail(dk, meal){ markSkipped(dk, meal); openDayDetail(dk); renderTrackerTab(); }
+function undoAndRefreshDetail(dk, meal){ undoTracking(dk, meal); openDayDetail(dk); renderTrackerTab(); }
+
+/* ===================== RESET ===================== */
+function resetAllData(){
+  if(!confirm('This clears all your recipes, weekly plan, tracker history, pantry, and targets. This cannot be undone. Continue?')) return;
+  recipeDB = [];
+  state.plan = {};
+  state.tracker = {};
+  state.pantry = {};
+  state.shoppingChecked = {};
+  state.allergyExclude = new Set();
+  state.vegetarianOnly = false;
+  state.veganOnly = false;
+  state.favorites = new Set();
+  state.recentlyUsed = [];
+  Object.keys(state.customIngredients||{}).forEach(id => { delete ingredientDB[id]; });
+  state.customIngredients = {};
+  state.activePreset = 'balanced';
+  state.targets = {kcal:2000, protein:100, carbs:250, fat:65, fiber:30, sugar:50, sodium:2300, calcium:1000, iron:18, potassium:3400, magnesium:400, zinc:11, vitA:900, vitC:90, vitD:20, vitE:15, vitK:120};
+  saveRecipes(); savePlan(); saveTracker(); saveSettings(); saveCustomIngredients();
+  renderPlanDashboard(); renderLibrary(); renderPantryList(); renderShopping(); renderNutritionTab(); renderTrackerTab();
+}
+
+/* ===================== INIT ===================== */
+async function loadState(){
+  const note = document.getElementById('storage-note');
+  state.dashboardDay = weekdayLabelFromDate(new Date());
+  state.nutritionActiveDay = state.dashboardDay;
+
+  if(!hasStorage){
+    note.textContent = 'No persistent storage available here — data will reset on reload';
+  } else {
+    try { const r = await storeGet('larder_recipes_v2'); recipeDB = r ? JSON.parse(r) : []; } catch(e){ recipeDB = []; }
+    try { const p = await storeGet('larder_plan_v2'); state.plan = p ? JSON.parse(p) : {}; } catch(e){ state.plan = {}; }
+    try { const t = await storeGet('larder_tracker_v2'); state.tracker = t ? JSON.parse(t) : {}; } catch(e){ state.tracker = {}; }
+    try {
+      const ci = await storeGet('larder_custom_ingredients_v1');
+      state.customIngredients = ci ? JSON.parse(ci) : {};
+      Object.assign(ingredientDB, state.customIngredients);
+    } catch(e){ state.customIngredients = {}; }
+    try {
+      const s = await storeGet('larder_settings_v2');
+      if(s){
+        const parsed = JSON.parse(s);
+        Object.assign(state.targets, parsed.targets || {});
+        state.activePreset = parsed.activePreset || 'balanced';
+        state.pantry = parsed.pantry || {};
+        // migrate old format where pantry values were plain numbers (qty only, no expiry)
+        Object.keys(state.pantry).forEach(id => {
+          if(typeof state.pantry[id] === 'number') state.pantry[id] = {qty: state.pantry[id], expiresOn: null};
+        });
+        state.allergyExclude = new Set(parsed.allergyExclude || []);
+        state.vegetarianOnly = !!parsed.vegetarianOnly;
+        state.veganOnly = !!parsed.veganOnly;
+        state.shoppingChecked = parsed.shoppingChecked || {};
+        state.favorites = new Set(parsed.favorites || []);
+        state.recentlyUsed = parsed.recentlyUsed || [];
+      }
+    } catch(e){ /* keep defaults */ }
+    note.textContent = 'Your recipes, plan, and tracking history are saved automatically';
+    note.classList.add('ok');
+  }
+
+  initLibraryControls();
+  document.querySelectorAll('#allergy-chips [data-allergen]').forEach(btn => { if(state.allergyExclude.has(btn.dataset.allergen)) btn.classList.add('active'); });
+  if(state.vegetarianOnly) document.getElementById('veg-toggle').classList.add('active');
+  if(state.veganOnly) document.getElementById('vegan-toggle').classList.add('active');
+
+  renderPlanDashboard();
+  renderLibrary();
+  renderPantryList();
+  renderNutritionTab();
+  renderTrackerTab();
+}
+loadState();
+
+</script>
+</body>
+</html>
